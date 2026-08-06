@@ -72,8 +72,8 @@ function BorrowRequests() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-blue-700">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
               <FaSearch className="text-slate-400" />
 
               <input
@@ -81,14 +81,14 @@ function BorrowRequests() {
                 placeholder="Search borrower or book..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="px-3 py-2 outline-none"
+                className="w-full px-3 py-2 outline-none sm:w-64"
               />
             </div>
 
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-blue-700"
+              className="rounded-xl border border-slate-300 px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
             >
               <option>All</option>
               <option>Pending</option>

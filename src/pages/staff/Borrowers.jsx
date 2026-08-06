@@ -83,10 +83,10 @@ function Borrowers() {
       borrowers.map((borrower) =>
         borrower.id === editingBorrower.id
           ? {
-              ...editingBorrower,
-              name: editingBorrower.name.trim(),
-              email: editingBorrower.email.trim(),
-            }
+            ...editingBorrower,
+            name: editingBorrower.name.trim(),
+            email: editingBorrower.email.trim(),
+          }
           : borrower
       )
     );
@@ -224,11 +224,10 @@ function Borrowers() {
 
                   <td className="px-5 py-4">
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                        borrower.type === "Student"
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${borrower.type === "Student"
                           ? "bg-blue-100 text-blue-700"
                           : "bg-violet-100 text-violet-700"
-                      }`}
+                        }`}
                     >
                       {borrower.type === "Student" ? (
                         <FaUserGraduate />
