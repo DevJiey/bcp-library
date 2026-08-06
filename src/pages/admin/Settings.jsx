@@ -75,18 +75,14 @@ function Settings() {
     return (
         <AdminLayout>
             {/* Page Header */}
-            <div className="mb-8">
+            <div className="mb-5 sm:mb-8">
                 <p className="text-sm font-semibold text-blue-700">
                     System Configuration
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold text-slate-900">
+                <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                     System Settings
                 </h1>
-
-                <p className="mt-2 text-slate-500">
-                    Configure borrowing policies, fine rates, and library information.
-                </p>
             </div>
 
             <div className="space-y-6">

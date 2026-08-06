@@ -63,6 +63,19 @@ function BorrowerDashboard() {
 
   return (
     <BorrowerLayout>
+      <div className="mb-5 sm:mb-8">
+        <p className="text-sm font-semibold text-blue-700">
+          Borrower Dashboard
+        </p>
+
+        <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+              Welcome back, Ronald!
+            </h1>
+          </div>
+        </div>
+      </div>
       {/* Parent wrapper controls responsive order */}
       <div className="flex flex-col gap-6">
         {/* Account and recent borrowings:
@@ -179,13 +192,12 @@ function BorrowerDashboard() {
 
                   <div className="sm:text-right">
                     <span
-                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                        book.status === "Returned"
+                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${book.status === "Returned"
                           ? "bg-emerald-100 text-emerald-700"
                           : book.status === "Due Soon"
                             ? "bg-amber-100 text-amber-700"
                             : "bg-blue-100 text-blue-700"
-                      }`}
+                        }`}
                     >
                       {book.status}
                     </span>

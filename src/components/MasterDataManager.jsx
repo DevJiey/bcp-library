@@ -81,19 +81,15 @@ function MasterDataManager({
             {sectionLabel}
           </p>
 
-          <h1 className="mt-1 text-3xl font-bold text-slate-900">
+          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
             {title}
           </h1>
-
-          <p className="mt-2 text-slate-500">
-            {subtitle}
-          </p>
         </div>
 
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-3 py-2 font-semibold text-white transition hover:bg-blue-800"
         >
           <FaPlus />
           Add {itemLabel}

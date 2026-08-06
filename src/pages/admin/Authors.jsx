@@ -9,7 +9,6 @@ function Authors() {
     <AdminLayout>
       <MasterDataManager
         title="Author Management"
-        subtitle="Maintain the authors associated with library catalog records."
         sectionLabel="Catalog Organization"
         itemLabel="Author"
         icon={<FaUserEdit />}

@@ -67,18 +67,14 @@ function Backup() {
     return (
         <AdminLayout>
             {/* Page Header */}
-            <div className="mb-8">
+            <div className="mb-5 sm:mb-8">
                 <p className="text-sm font-semibold text-blue-700">
                     System Maintenance
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold text-slate-900">
+                <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                     Backup & Restore
                 </h1>
-
-                <p className="mt-2 text-slate-500">
-                    Create database backups and restore the library system from a backup file.
-                </p>
             </div>
 
             {/* Main Actions */}

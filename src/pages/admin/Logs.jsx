@@ -113,18 +113,14 @@ function Logs() {
   return (
     <AdminLayout>
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-5 sm:mb-8">
         <p className="text-sm font-semibold text-blue-700">
           Audit and Activity
         </p>
 
-        <h1 className="mt-1 text-3xl font-bold text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
           System Logs
         </h1>
-
-        <p className="mt-2 text-slate-500">
-          Review administrative, staff, transaction, and system activity records.
-        </p>
       </div>
 
       {/* Toolbar */}

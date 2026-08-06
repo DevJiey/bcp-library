@@ -9,7 +9,6 @@ function Categories() {
     <AdminLayout>
       <MasterDataManager
         title="Category Management"
-        subtitle="Organize library books using catalog categories."
         sectionLabel="Catalog Organization"
         itemLabel="Category"
         icon={<FaTags />}

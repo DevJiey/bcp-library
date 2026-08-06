@@ -150,20 +150,16 @@ function AdminDashboard() {
 
     return (
         <AdminLayout>
-            <div className="mb-8">
+            <div className="mb-5 sm:mb-8">
                 <p className="text-sm font-semibold text-blue-700">
                     System Administration
                 </p>
 
                 <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">
+                        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                             Welcome back, Administrator!
                         </h1>
-
-                        <p className="mt-2 text-slate-500">
-                            Monitor library operations, inventory, and staff activities from one place.
-                        </p>
                     </div>
 
                     <p className="text-sm text-slate-500">
