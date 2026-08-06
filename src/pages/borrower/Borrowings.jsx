@@ -44,18 +44,14 @@ function Borrowings() {
   return (
     <BorrowerLayout>
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-5 sm:mb-8">
         <p className="text-sm font-semibold text-blue-700">
           My Library Activity
         </p>
 
-        <h1 className="mt-1 text-3xl font-bold text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
           Borrowing History
         </h1>
-
-        <p className="mt-2 text-slate-500">
-          Review your borrowed, returned, and upcoming due books.
-        </p>
       </div>
 
       {/* Toolbar */}

@@ -36,18 +36,14 @@ function Notifications() {
   return (
     <BorrowerLayout>
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-5 sm:mb-8" >
         <p className="text-sm font-semibold text-blue-700">
           Library Updates
         </p>
 
-        <h1 className="mt-1 text-3xl font-bold text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
           Notifications
         </h1>
-
-        <p className="mt-2 text-slate-500">
-          View due-date reminders, overdue notices, and reservation updates.
-        </p>
       </div>
 
       {/* Notification Container */}

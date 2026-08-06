@@ -19,19 +19,14 @@ function Books() {
 
     return (
         <BorrowerLayout>
-            <div className="mb-8">
-
+            <div className="mb-5 sm:mb-8">
                 <p className="text-sm font-semibold text-blue-700">
                     Library Catalog
                 </p>
 
-                <h1 className="mt-1 text-3xl font-bold text-slate-900">
+                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                     Search Books
                 </h1>
-
-                <p className="mt-2 text-slate-500">
-                    Browse the BCP Library collection and request available books.
-                </p>
             </div>
 
             <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
