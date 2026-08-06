@@ -198,21 +198,21 @@ function AdminDashboard() {
                     </div>
                 ))}
             </section>
-            <div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
+            <div className="mt-6 grid gap-4 sm:gap-6 xl:grid-cols-[1.5fr_0.9fr]">
                 {/* Recent Activities */}
                 <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                    <div className="flex flex-col gap-4 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                                 <FaClipboardList />
                             </div>
 
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
                                     Recent Activities
                                 </h2>
 
-                                <p className="text-sm text-slate-500">
+                                <p className="mt-1 text-sm leading-5 text-slate-500">
                                     Latest administrative and system actions
                                 </p>
                             </div>
@@ -221,7 +221,7 @@ function AdminDashboard() {
                         <button
                             type="button"
                             onClick={() => navigate("/admin/logs")}
-                            className="flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-900"
+                            className="flex shrink-0 items-center gap-2 self-end text-sm font-semibold text-blue-700 transition hover:text-blue-900 sm:self-auto"
                         >
                             View all
                             <FaArrowRight className="text-xs" />
@@ -232,7 +232,7 @@ function AdminDashboard() {
                         {recentActivities.map((activity) => (
                             <article
                                 key={activity.id}
-                                className="flex gap-4 px-6 py-5 transition hover:bg-blue-50/40"
+                                className="flex gap-3 px-4 py-4 transition hover:bg-blue-50/40 sm:gap-4 sm:px-6 sm:py-5"
                             >
                                 <div
                                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${activity.iconStyle}`}
@@ -242,60 +242,20 @@ function AdminDashboard() {
 
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <h3 className="font-semibold text-slate-900">
+                                        <h3 className="break-words font-semibold text-slate-900">
                                             {activity.title}
                                         </h3>
 
-                                        <span className="text-xs text-slate-400">
+                                        <span className="shrink-0 text-xs text-slate-400">
                                             {activity.time}
                                         </span>
                                     </div>
 
-                                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                                    <p className="mt-1 break-words text-sm leading-6 text-slate-500">
                                         {activity.description}
                                     </p>
                                 </div>
                             </article>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Quick Actions */}
-                <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                    <div className="mb-5">
-                        <h2 className="text-xl font-bold text-slate-900">
-                            Quick Actions
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-500">
-                            Common administrative tasks
-                        </p>
-                    </div>
-
-                    <div className="space-y-3">
-                        {quickActions.map((action) => (
-                            <button
-                                key={action.label}
-                                type="button"
-                                onClick={() => navigate(action.path)}
-                                className="group flex w-full items-center gap-4 rounded-xl border border-slate-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
-                            >
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-blue-700 transition group-hover:bg-blue-700 group-hover:text-white">
-                                    {action.icon}
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-semibold text-slate-900">
-                                        {action.label}
-                                    </p>
-
-                                    <p className="truncate text-xs text-slate-500">
-                                        {action.description}
-                                    </p>
-                                </div>
-
-                                <FaArrowRight className="text-xs text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-700" />
-                            </button>
                         ))}
                     </div>
                 </section>
