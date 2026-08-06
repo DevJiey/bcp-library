@@ -39,7 +39,7 @@ function Books() {
                 />
             </div>
 
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
                 <table className="w-full">
                     <thead className="bg-slate-50">
                         <tr>
