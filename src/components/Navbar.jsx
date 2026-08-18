@@ -39,7 +39,7 @@ function Navbar({
     .toUpperCase();
 
   const unreadCount = notifications.filter(
-    (notification) => notification.unread
+    (notification) => !notification.is_read
   ).length;
 
   useEffect(() => {
@@ -70,10 +70,14 @@ function Navbar({
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("currentUser");
+
     setShowLogoutModal(false);
     setShowProfileMenu(false);
     setShowNotifications(false);
+
     navigate("/");
   };
 
@@ -157,18 +161,16 @@ function Navbar({
                             navigate(notificationsPath);
                             setShowNotifications(false);
                           }}
-                          className={`flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-blue-50 ${
-                            notification.unread
-                              ? "bg-blue-50/70"
-                              : ""
-                          }`}
+                          className={`flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-blue-50 ${!notification.is_read
+                            ? "bg-blue-50/70"
+                            : ""
+                            }`}
                         >
                           <div
-                            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                              notification.unread
+                            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!notification.is_read
                                 ? "bg-blue-600"
                                 : "bg-slate-300"
-                            }`}
+                              }`}
                           />
 
                           <div className="min-w-0 flex-1">
@@ -245,9 +247,8 @@ function Navbar({
               </div>
 
               <FaChevronDown
-                className={`hidden text-xs text-slate-400 transition-transform sm:block ${
-                  showProfileMenu ? "rotate-180" : ""
-                }`}
+                className={`hidden text-xs text-slate-400 transition-transform sm:block ${showProfileMenu ? "rotate-180" : ""
+                  }`}
               />
             </button>
 

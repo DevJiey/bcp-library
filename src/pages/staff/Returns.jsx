@@ -1,255 +1,532 @@
-import { useState } from "react";
-import { useToast } from "../../context/ToastContext";
 import {
-  FaSearch,
+  useState,
+} from "react";
+
+import {
   FaUndo,
+  FaBarcode,
   FaBook,
-  FaCalendarAlt,
-  FaSyncAlt,
+  FaCheckCircle,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
+import BarcodeScanner from "../../components/BarcodeScanner";
 import StaffLayout from "../../layouts/StaffLayout";
-import returnsData from "../../data/returns";
+import apiRequest from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 function Returns() {
-  const [records, setRecords] = useState(returnsData);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
+  const { showToast } = useToast();
 
-  const filteredRecords = records.filter((item) => {
-    const keyword = search.toLowerCase();
+  const [barcode, setBarcode] =
+    useState("");
+  const [showScanner, setShowScanner] =
+    useState(false);
 
-    const matchesSearch =
-      item.borrower.toLowerCase().includes(keyword) ||
-      item.book.toLowerCase().includes(keyword);
+  const [conditionOnReturn, setConditionOnReturn] =
+    useState("good");
 
-    const matchesStatus =
-      status === "All" || item.status === status;
+  const [remarks, setRemarks] =
+    useState("");
 
-    return matchesSearch && matchesStatus;
-  });
+  const [processing, setProcessing] =
+    useState(false);
 
-  const processReturn = (id) => {
-    setRecords(
-      records.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: "Returned",
-            }
-          : item
-      )
-    );
-  };
+  const [lastReturn, setLastReturn] =
+    useState(null);
 
-  const renewBook = (id) => {
-    setRecords(
-      records.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              dueDate: "2026-08-29",
-              status: "Borrowed",
-            }
-          : item
-      )
-    );
+  const [error, setError] =
+    useState("");
 
-    showToast("Book renewed successfully!", "success");
-  };
+  const handleReturn = async (
+    event
+  ) => {
+    event.preventDefault();
 
-  const getStatusStyle = (recordStatus) => {
-    if (recordStatus === "Returned") {
-      return "bg-emerald-100 text-emerald-700";
+    if (!barcode.trim()) {
+      showToast(
+        "Please scan or enter a book barcode.",
+        "error"
+      );
+
+      return;
     }
 
-    if (recordStatus === "Overdue") {
-      return "bg-red-100 text-red-700";
+    try {
+      setProcessing(true);
+      setError("");
+
+      const response =
+        await apiRequest(
+          "/returns",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              barcode:
+                barcode.trim(),
+
+              conditionOnReturn,
+
+              remarks:
+                remarks.trim() ||
+                null,
+            }),
+          }
+        );
+
+      setLastReturn(
+        response?.data || null
+      );
+
+      showToast(
+        "Book return processed successfully!",
+        "success"
+      );
+
+      setBarcode("");
+      setConditionOnReturn(
+        "good"
+      );
+      setRemarks("");
+    } catch (err) {
+      const message =
+        err.message ||
+        "Failed to process book return.";
+
+      setError(message);
+
+      showToast(
+        message,
+        "error"
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const formatDate = (
+    value
+  ) => {
+    if (!value) {
+      return "—";
     }
 
-    return "bg-blue-100 text-blue-700";
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return "—";
+    }
+
+    return date.toLocaleString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }
+    );
   };
 
   return (
     <StaffLayout>
-      {/* Page Header */}
+      {/* PAGE HEADER */}
       <div className="mb-5 sm:mb-8">
+
         <p className="text-sm font-semibold text-blue-700">
           Circulation Management
         </p>
 
         <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
-          Process Returns
+          Process Book Return
         </h1>
+
+        <p className="mt-2 text-sm text-slate-500">
+          Scan the physical book barcode and record its condition upon return.
+        </p>
+
       </div>
 
-      {/* Search and Filter Toolbar */}
-      <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-              <FaUndo />
-            </div>
+      {error && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
 
-            <div>
-              <h2 className="font-bold text-slate-900">
-                Borrowing Transactions
-              </h2>
+          <FaExclamationTriangle className="mt-0.5 shrink-0" />
 
-              <p className="text-sm text-slate-500">
-                {filteredRecords.length} transaction
-                {filteredRecords.length !== 1 ? "s" : ""} found
-              </p>
-            </div>
-          </div>
+          <span>
+            {error}
+          </span>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
-              <FaSearch className="text-slate-400" />
-
-              <input
-                type="text"
-                placeholder="Search borrower or book..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-3 py-2 outline-none sm:w-64"
-              />
-            </div>
-
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="rounded-xl border border-slate-300 px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-            >
-              <option value="All">All Status</option>
-              <option value="Borrowed">Borrowed</option>
-              <option value="Overdue">Overdue</option>
-              <option value="Returned">Returned</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Transactions Table */}
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px]">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                  Borrower
-                </th>
-
-                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                  Book
-                </th>
-
-                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                  Due Date
-                </th>
-
-                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                  Status
-                </th>
-
-                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredRecords.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-t border-slate-100 transition hover:bg-blue-50/40"
-                >
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-slate-900">
-                      {item.borrower}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-400">
-                      Registered borrower
-                    </p>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                        <FaBook />
-                      </div>
-
-                      <p className="font-medium text-slate-900">
-                        {item.book}
-                      </p>
-                    </div>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaCalendarAlt className="text-slate-400" />
-                      {item.dueDate}
-                    </div>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
-                        item.status
-                      )}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {item.status !== "Returned" ? (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => processReturn(item.id)}
-                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                        >
-                          Process Return
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => renewBook(item.id)}
-                          className="flex items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-                        >
-                          <FaSyncAlt className="text-xs" />
-                          Renew
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-sm font-medium text-slate-400">
-                        Transaction completed
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {filteredRecords.length === 0 && (
-        <div className="mt-6 rounded-2xl bg-white px-6 py-14 text-center shadow-sm ring-1 ring-slate-200">
-          <FaUndo className="mx-auto text-3xl text-slate-300" />
-
-          <h2 className="mt-4 font-semibold text-slate-800">
-            No borrowing transactions found
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Try changing the search keyword or selected status.
-          </p>
         </div>
       )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+
+        {/* RETURN FORM */}
+        <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+
+          <div className="bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
+
+            <div className="flex items-center gap-4">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-xl">
+                <FaUndo />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold">
+                  Return Processing
+                </h2>
+
+                <p className="mt-1 text-sm text-blue-100">
+                  Enter the returned book information
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+          <form
+            onSubmit={
+              handleReturn
+            }
+            className="p-6"
+          >
+
+            {/* BARCODE */}
+            <label className="block text-sm font-semibold text-slate-700">
+              Book Barcode
+            </label>
+
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+
+              <div className="flex min-w-0 flex-1 items-center rounded-xl border border-slate-300 px-4 transition focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-100">
+
+                <FaBarcode className="shrink-0 text-slate-400" />
+
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={(event) => {
+                    setBarcode(
+                      event.target.value
+                    );
+
+                    setError("");
+                  }}
+                  placeholder="Scan or enter barcode"
+                  autoFocus
+                  disabled={processing}
+                  className="min-w-0 w-full px-3 py-3 outline-none"
+                />
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowScanner(true)
+                }
+                disabled={processing}
+                className="shrink-0 rounded-xl bg-[#0F4C97] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Scan Camera
+              </button>
+
+            </div>
+
+            {barcode && (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                  Barcode Ready
+                </p>
+
+                <p className="mt-1 break-all font-mono text-sm font-bold text-emerald-800">
+                  {barcode}
+                </p>
+
+              </div>
+            )}
+
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              Scan using the device camera, USB barcode scanner, or enter the barcode manually. The barcode must belong to a currently borrowed physical book copy.
+            </p>
+
+            {/* CONDITION */}
+            <label className="mt-6 block text-sm font-semibold text-slate-700">
+              Condition on Return
+            </label>
+
+            <select
+              value={
+                conditionOnReturn
+              }
+              onChange={(
+                event
+              ) =>
+                setConditionOnReturn(
+                  event.target
+                    .value
+                )
+              }
+              disabled={
+                processing
+              }
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="excellent">
+                Excellent
+              </option>
+
+              <option value="good">
+                Good
+              </option>
+
+              <option value="fair">
+                Fair
+              </option>
+
+              <option value="poor">
+                Poor
+              </option>
+
+              <option value="damaged">
+                Damaged
+              </option>
+            </select>
+
+            {/* REMARKS */}
+            <label className="mt-6 block text-sm font-semibold text-slate-700">
+              Remarks
+            </label>
+
+            <textarea
+              value={
+                remarks
+              }
+              onChange={(
+                event
+              ) =>
+                setRemarks(
+                  event.target
+                    .value
+                )
+              }
+              disabled={
+                processing
+              }
+              rows={4}
+              placeholder="Optional notes about the returned book..."
+              className="mt-2 w-full resize-none rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+            />
+
+            <button
+              type="submit"
+              disabled={
+                processing
+              }
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FaCheckCircle />
+
+              {processing
+                ? "Processing Return..."
+                : "Process Return"}
+            </button>
+
+          </form>
+
+        </section>
+
+        {/* RESULT / GUIDE */}
+        <div className="space-y-6">
+
+          {lastReturn ? (
+            <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-emerald-200">
+
+              <div className="border-b border-emerald-100 bg-emerald-50 px-6 py-5">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <FaCheckCircle />
+                  </div>
+
+                  <div>
+                    <h2 className="font-bold text-emerald-900">
+                      Return Completed
+                    </h2>
+
+                    <p className="text-sm text-emerald-700">
+                      The borrowing transaction has been updated.
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="space-y-4 p-6">
+
+                <div className="flex justify-between border-b border-slate-100 pb-3">
+
+                  <span className="text-sm text-slate-500">
+                    Transaction ID
+                  </span>
+
+                  <span className="text-sm font-semibold text-slate-800">
+                    {lastReturn
+                      ?.returnRecord
+                      ?.borrow_transaction_id ||
+                      "—"}
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between border-b border-slate-100 pb-3">
+
+                  <span className="text-sm text-slate-500">
+                    Returned At
+                  </span>
+
+                  <span className="text-right text-sm font-semibold text-slate-800">
+                    {formatDate(
+                      lastReturn
+                        ?.returnRecord
+                        ?.returned_at
+                    )}
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between border-b border-slate-100 pb-3">
+
+                  <span className="text-sm text-slate-500">
+                    Condition
+                  </span>
+
+                  <span className="text-sm font-semibold capitalize text-slate-800">
+                    {lastReturn
+                      ?.returnRecord
+                      ?.condition_on_return ||
+                      "—"}
+                  </span>
+
+                </div>
+
+                {lastReturn?.accountUpdate && (
+                  <div
+                    className={`rounded-xl px-4 py-3 text-sm ${lastReturn
+                      .accountUpdate
+                      .unlocked
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-amber-50 text-amber-700"
+                      }`}
+                  >
+                    {lastReturn
+                      .accountUpdate
+                      .unlocked
+                      ? "The borrower account was automatically unlocked because all overdue books were cleared."
+                      : `${lastReturn.accountUpdate.remainingOverdue} overdue borrowing(s) remain on this account.`}
+                  </div>
+                )}
+
+              </div>
+
+            </section>
+          ) : (
+            <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                <FaBook />
+              </div>
+
+              <h2 className="mt-5 text-lg font-bold text-slate-900">
+                Return Workflow
+              </h2>
+
+              <div className="mt-5 space-y-4">
+
+                <div className="flex gap-3">
+
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                    1
+                  </span>
+
+                  <p className="text-sm leading-6 text-slate-600">
+                    Scan or enter the barcode printed on the physical book copy.
+                  </p>
+
+                </div>
+
+                <div className="flex gap-3">
+
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                    2
+                  </span>
+
+                  <p className="text-sm leading-6 text-slate-600">
+                    Inspect the book and select its condition upon return.
+                  </p>
+
+                </div>
+
+                <div className="flex gap-3">
+
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                    3
+                  </span>
+
+                  <p className="text-sm leading-6 text-slate-600">
+                    Submit the return. The copy becomes available again unless it is damaged.
+                  </p>
+
+                </div>
+
+                <div className="flex gap-3">
+
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                    4
+                  </span>
+
+                  <p className="text-sm leading-6 text-slate-600">
+                    If this clears all overdue books, the borrower account is automatically unlocked.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </section>
+          )}
+
+        </div>
+
+      </div>
+      <BarcodeScanner
+        open={showScanner}
+        onClose={() =>
+          setShowScanner(false)
+        }
+        onDetected={(value) => {
+          setBarcode(value);
+          setError("");
+          setShowScanner(false);
+
+          showToast(
+            `Barcode scanned: ${value}`,
+            "success"
+          );
+        }}
+      />
     </StaffLayout>
   );
 }

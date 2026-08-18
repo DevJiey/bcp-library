@@ -1,12 +1,21 @@
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import PortalLayout from "./PortalLayout";
+import apiRequest from "../services/api";
+
 import {
   FaHome,
   FaBook,
   FaClipboardList,
-  FaMoneyBillWave,
 } from "react-icons/fa";
 
 function BorrowerLayout({ children }) {
+  const [notifications, setNotifications] =
+    useState([]);
+
   const links = [
     {
       label: "Dashboard",
@@ -23,47 +32,79 @@ function BorrowerLayout({ children }) {
       path: "/borrower/borrowings",
       icon: <FaClipboardList />,
     },
-    {
-      label: "Fines",
-      path: "/borrower/fines",
-      icon: <FaMoneyBillWave />,
-    },
   ];
 
-  const notifications = [
-    {
-      id: 1,
-      title: "New books are now available",
-      message: "Explore the newest books in the library catalog.",
-      date: "August 5, 2026",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Return reminder",
-      message: "Please return borrowed books before their due dates.",
-      date: "August 3, 2026",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Library schedule reminder",
-      message: "The library will close at 5:00 PM on Friday.",
-      date: "August 2, 2026",
-      unread: false,
-    },
-  ];
+  let currentUser = {};
+
+  try {
+    currentUser = JSON.parse(
+      localStorage.getItem(
+        "currentUser"
+      ) || "{}"
+    );
+  } catch {
+    currentUser = {};
+  }
+
+  const fullName = [
+    currentUser.firstName,
+    currentUser.middleName,
+    currentUser.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  useEffect(() => {
+    const loadNotifications =
+      async () => {
+        try {
+          const response =
+            await apiRequest(
+              "/notifications/me"
+            );
+
+          setNotifications(
+            response?.data || []
+          );
+        } catch (error) {
+          console.error(
+            "Failed to load navbar notifications:",
+            error
+          );
+
+          setNotifications([]);
+        }
+      };
+
+    loadNotifications();
+  }, []);
 
   return (
     <PortalLayout
       links={links}
       role="Borrower"
       navbarProps={{
-        name: "Ronald Jay Cruz",
-        email: "240116136@bcp.edu.ph",
-        role: "Borrower",
-        profilePath: "/borrower/profile",
-        notificationsPath: "/borrower/notifications",
+        name:
+          fullName ||
+          "Library Borrower",
+
+        email:
+          currentUser.email ||
+          currentUser.schoolId ||
+          "",
+
+        role:
+          currentUser.borrowerType ===
+          "faculty"
+            ? "Faculty"
+            : "Student",
+
+        profilePath:
+          "/borrower/profile",
+
+        notificationsPath:
+          "/borrower/notifications",
+
         notifications,
       }}
     >

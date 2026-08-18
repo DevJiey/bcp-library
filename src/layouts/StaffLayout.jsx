@@ -4,7 +4,6 @@ import {
   FaHome,
   FaBook,
   FaUsers,
-  FaMoneyBillWave,
   FaClipboardCheck,
 } from "react-icons/fa";
 
@@ -30,21 +29,42 @@ function StaffLayout({ children }) {
       path: "/staff/returns",
       icon: <FaBook />,
     },
-    {
-      label: "Fine Collection",
-      path: "/staff/fines",
-      icon: <FaMoneyBillWave />,
-    },
   ];
+
+  let currentUser = {};
+
+  try {
+    currentUser = JSON.parse(
+      localStorage.getItem("currentUser") || "{}"
+    );
+  } catch {
+    currentUser = {};
+  }
+
+  const fullName = [
+    currentUser.firstName,
+    currentUser.middleName,
+    currentUser.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <PortalLayout
       links={links}
-      role="Librarian"
+      role="Library Staff"
       navbarProps={{
-        name: "Angela Reyes",
-        email: "angela.reyes@bcp.edu.ph",
-        role: "Librarian",
+        name:
+          fullName ||
+          "Library Staff",
+
+        email:
+          currentUser.email ||
+          currentUser.schoolId ||
+          "",
+
+        role: "Library Staff",
+
         profilePath: null,
       }}
     >

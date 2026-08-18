@@ -1,340 +1,667 @@
-import { useState } from "react";
-import { useToast } from "../../context/ToastContext";
 import {
-    FaDatabase,
-    FaDownload,
-    FaUpload,
-    FaHistory,
-    FaCheckCircle,
-    FaExclamationTriangle,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  FaDatabase,
+  FaDownload,
+  FaHistory,
+  FaCloudDownloadAlt,
+  FaUndoAlt,
+  FaExclamationTriangle,
+  FaSyncAlt,
 } from "react-icons/fa";
 
 import AdminLayout from "../../layouts/AdminLayout";
+import apiRequest from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 function Backup() {
-    const { showToast } = useToast();
-    const [backups, setBackups] = useState([
-        {
-            id: 1,
-            fileName: "bcp_library_backup_2026-08-05.sql",
-            createdAt: "August 5, 2026 — 8:30 AM",
-            size: "12.4 MB",
-            type: "Manual",
-            status: "Completed",
-        },
-        {
-            id: 2,
-            fileName: "bcp_library_backup_2026-08-04.sql",
-            createdAt: "August 4, 2026 — 6:00 PM",
-            size: "12.1 MB",
-            type: "Automatic",
-            status: "Completed",
-        },
-    ]);
+  const { showToast } = useToast();
 
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [backups, setBackups] =
+    useState([]);
 
-    const createBackup = () => {
-        const newBackup = {
-            id: Date.now(),
-            fileName: `bcp_library_backup_${new Date()
-                .toISOString()
-                .slice(0, 10)}.sql`,
-            createdAt: new Date().toLocaleString(),
-            size: "12.6 MB",
-            type: "Manual",
-            status: "Completed",
-        };
+  const [loading, setLoading] =
+    useState(true);
 
-        setBackups([newBackup, ...backups]);
+  const [creating, setCreating] =
+    useState(false);
 
-        showToast("Database backup created successfully.", "success");
+  const [restoringFile, setRestoringFile] =
+    useState(null);
+
+  const [downloadingFile, setDownloadingFile] =
+    useState(null);
+
+  const [error, setError] =
+    useState("");
+
+  const loadBackups = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response =
+        await apiRequest(
+          "/backups"
+        );
+
+      setBackups(
+        response?.data || []
+      );
+    } catch (err) {
+      setError(
+        err.message ||
+          "Failed to load database backups."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBackups();
+  }, []);
+
+  const handleCreateBackup =
+    async () => {
+      try {
+        setCreating(true);
+        setError("");
+
+        await apiRequest(
+          "/backup",
+          {
+            method: "POST",
+          }
+        );
+
+        showToast(
+          "Database backup created successfully!",
+          "success"
+        );
+
+        await loadBackups();
+      } catch (err) {
+        const message =
+          err.message ||
+          "Failed to create database backup.";
+
+        setError(message);
+
+        showToast(
+          message,
+          "error"
+        );
+      } finally {
+        setCreating(false);
+      }
     };
 
-    const handleRestore = () => {
-        if (!selectedFile) {
-            showToast("Please select a backup file first.", "error");
-            return;
+  const getToken = () => {
+    return (
+      localStorage.getItem(
+        "token"
+      ) || ""
+    );
+  };
+
+  const handleDownload =
+    async (backup) => {
+      const fileName =
+        backup.fileName ||
+        backup.file_name ||
+        backup.name;
+
+      if (!fileName) {
+        showToast(
+          "Backup filename is missing.",
+          "error"
+        );
+
+        return;
+      }
+
+      try {
+        setDownloadingFile(
+          fileName
+        );
+
+        const baseUrl =
+          import.meta.env
+            .VITE_API_URL ||
+          "http://localhost:5000/api/v1";
+
+        const response =
+          await fetch(
+            `${baseUrl}/backups/${encodeURIComponent(
+              fileName
+            )}/download`,
+            {
+              headers: {
+                Authorization: `Bearer ${getToken()}`,
+              },
+            }
+          );
+
+        if (!response.ok) {
+          let message =
+            "Failed to download database backup.";
+
+          try {
+            const data =
+              await response.json();
+
+            message =
+              data.message ||
+              message;
+          } catch {
+            // response is not JSON
+          }
+
+          throw new Error(
+            message
+          );
         }
 
-        setShowRestoreModal(false);
-        setSelectedFile(null);
+        const blob =
+          await response.blob();
 
-        showToast("Database restored successfully.", "success");
+        const url =
+          window.URL.createObjectURL(
+            blob
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href = url;
+        link.download =
+          fileName;
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+        window.URL.revokeObjectURL(
+          url
+        );
+
+        showToast(
+          "Backup downloaded successfully!",
+          "success"
+        );
+      } catch (err) {
+        showToast(
+          err.message ||
+            "Failed to download backup.",
+          "error"
+        );
+      } finally {
+        setDownloadingFile(
+          null
+        );
+      }
     };
 
-    return (
-        <AdminLayout>
-            {/* Page Header */}
-            <div className="mb-5 sm:mb-8">
-                <p className="text-sm font-semibold text-blue-700">
-                    System Maintenance
-                </p>
+  const handleRestore =
+    async (backup) => {
+      const fileName =
+        backup.fileName ||
+        backup.file_name ||
+        backup.name;
 
-                <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
-                    Backup & Restore
-                </h1>
-            </div>
+      if (!fileName) {
+        showToast(
+          "Backup filename is missing.",
+          "error"
+        );
 
-            {/* Main Actions */}
-            <div className="grid gap-6 lg:grid-cols-2">
-                {/* Create Backup */}
-                <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl text-blue-700">
-                            <FaDatabase />
-                        </div>
+        return;
+      }
 
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900">
-                                Create Database Backup
-                            </h2>
+      const confirmed =
+        window.confirm(
+          `Restore database using "${fileName}"?\n\nThis will replace the current database data with the selected backup.`
+        );
 
-                            <p className="mt-2 leading-6 text-slate-500">
-                                Generate a backup copy of the current library database and system records.
-                            </p>
-                        </div>
-                    </div>
+      if (!confirmed) {
+        return;
+      }
 
-                    <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4">
-                        <p className="text-sm font-semibold text-blue-800">
-                            Recommended before major system changes
-                        </p>
+      try {
+        setRestoringFile(
+          fileName
+        );
 
-                        <p className="mt-1 text-sm leading-6 text-blue-700">
-                            Creating a backup protects book, borrower, transaction, fine, and account records.
-                        </p>
-                    </div>
+        setError("");
 
-                    <button
-                        type="button"
-                        onClick={createBackup}
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
-                    >
-                        <FaDownload />
-                        Create Backup
-                    </button>
-                </section>
+        await apiRequest(
+          "/restore",
+          {
+            method: "POST",
 
-                {/* Restore Backup */}
-                <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-xl text-amber-700">
-                            <FaUpload />
-                        </div>
+            body: JSON.stringify({
+              fileName,
+            }),
+          }
+        );
 
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900">
-                                Restore Database
-                            </h2>
+        showToast(
+          "Database restored successfully!",
+          "success"
+        );
 
-                            <p className="mt-2 leading-6 text-slate-500">
-                                Restore system records using a previously generated SQL backup file.
-                            </p>
-                        </div>
-                    </div>
+        await loadBackups();
+      } catch (err) {
+        const message =
+          err.message ||
+          "Failed to restore database backup.";
 
-                    <div className="mt-6">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                            Select Backup File
-                        </label>
+        setError(
+          message
+        );
 
-                        <input
-                            type="file"
-                            accept=".sql,.zip"
-                            onChange={(e) =>
-                                setSelectedFile(e.target.files[0] || null)
-                            }
-                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-100 file:px-4 file:py-2 file:font-semibold file:text-blue-700 hover:file:bg-blue-200"
-                        />
+        showToast(
+          message,
+          "error"
+        );
+      } finally {
+        setRestoringFile(
+          null
+        );
+      }
+    };
 
-                        {selectedFile && (
-                            <p className="mt-3 text-sm text-slate-500">
-                                Selected file:{" "}
-                                <span className="font-semibold text-slate-800">
-                                    {selectedFile.name}
-                                </span>
-                            </p>
-                        )}
-                    </div>
+  const formatDate = (
+    value
+  ) => {
+    if (!value) {
+      return "—";
+    }
 
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (!selectedFile) {
-                                alert("Please select a backup file first.");
-                                return;
-                            }
+    const date =
+      new Date(value);
 
-                            setShowRestoreModal(true);
-                        }}
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 font-semibold text-white transition hover:bg-amber-600"
-                    >
-                        <FaUpload />
-                        Restore Database
-                    </button>
-                </section>
-            </div>
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return value;
+    }
 
-            {/* Warning */}
-            <section className="mt-6 flex gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
-                <div className="mt-1 text-red-600">
-                    <FaExclamationTriangle />
-                </div>
-
-                <div>
-                    <h2 className="font-bold text-red-800">
-                        Restore operation warning
-                    </h2>
-
-                    <p className="mt-1 text-sm leading-6 text-red-700">
-                        Restoring a backup may replace current system records. Always create a new backup before continuing.
-                    </p>
-                </div>
-            </section>
-
-            {/* Backup History */}
-            <section className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
-                        <FaHistory />
-                    </div>
-
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-900">
-                            Backup History
-                        </h2>
-
-                        <p className="text-sm text-slate-500">
-                            {backups.length} backup record
-                            {backups.length !== 1 ? "s" : ""}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[850px]">
-                        <thead className="bg-slate-50">
-                            <tr>
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Backup File
-                                </th>
-
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Created At
-                                </th>
-
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Size
-                                </th>
-
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Type
-                                </th>
-
-                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Status
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {backups.map((backup) => (
-                                <tr
-                                    key={backup.id}
-                                    className="border-t border-slate-100 transition hover:bg-blue-50/40"
-                                >
-                                    <td className="px-5 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                                <FaDatabase />
-                                            </div>
-
-                                            <p className="font-semibold text-slate-900">
-                                                {backup.fileName}
-                                            </p>
-                                        </div>
-                                    </td>
-
-                                    <td className="px-5 py-4 text-sm text-slate-600">
-                                        {backup.createdAt}
-                                    </td>
-
-                                    <td className="px-5 py-4 text-sm text-slate-600">
-                                        {backup.size}
-                                    </td>
-
-                                    <td className="px-5 py-4">
-                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                            {backup.type}
-                                        </span>
-                                    </td>
-
-                                    <td className="px-5 py-4">
-                                        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                            <FaCheckCircle />
-                                            {backup.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            {/* Restore Confirmation Modal */}
-            {showRestoreModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-                        <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 text-white">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-red-100">
-                                Critical System Action
-                            </p>
-
-                            <h2 className="mt-1 text-xl font-bold">
-                                Confirm Database Restore
-                            </h2>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="flex gap-4 rounded-xl border border-red-100 bg-red-50 p-4">
-                                <FaExclamationTriangle className="mt-1 shrink-0 text-red-600" />
-
-                                <p className="text-sm leading-6 text-red-700">
-                                    This operation may replace the current database contents using{" "}
-                                    <strong>{selectedFile?.name}</strong>.
-                                </p>
-                            </div>
-
-                            <p className="mt-5 text-sm leading-6 text-slate-500">
-                                Confirm only when the selected file is a valid backup created for this system.
-                            </p>
-
-                            <div className="mt-6 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowRestoreModal(false)}
-                                    className="flex-1 rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleRestore}
-                                    className="flex-[1.4] rounded-xl bg-red-600 px-4 py-3 font-semibold text-white transition hover:bg-red-700"
-                                >
-                                    Confirm Restore
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </AdminLayout>
+    return date.toLocaleString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }
     );
+  };
+
+  const formatFileSize = (
+    bytes
+  ) => {
+    const value =
+      Number(bytes);
+
+    if (
+      !Number.isFinite(
+        value
+      ) ||
+      value <= 0
+    ) {
+      return "—";
+    }
+
+    const units = [
+      "B",
+      "KB",
+      "MB",
+      "GB",
+    ];
+
+    let size = value;
+    let unitIndex = 0;
+
+    while (
+      size >= 1024 &&
+      unitIndex <
+        units.length - 1
+    ) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toFixed(
+      size >= 10 ||
+        unitIndex === 0
+        ? 0
+        : 1
+    )} ${units[unitIndex]}`;
+  };
+
+  return (
+    <AdminLayout>
+      {/* HEADER */}
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+
+        <div>
+          <p className="text-sm font-semibold text-blue-700">
+            Database Maintenance
+          </p>
+
+          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+            Backup & Restore
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Create, download, and restore PostgreSQL database backups.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          disabled={
+            creating
+          }
+          onClick={
+            handleCreateBackup
+          }
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <FaDatabase />
+
+          {creating
+            ? "Creating Backup..."
+            : "Create Backup"}
+        </button>
+
+      </div>
+
+      {error && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+
+          <FaExclamationTriangle className="mt-0.5 shrink-0" />
+
+          <span>
+            {error}
+          </span>
+
+        </div>
+      )}
+
+      {/* WARNING */}
+      <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+
+        <div className="flex gap-4">
+
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <FaExclamationTriangle />
+          </div>
+
+          <div>
+            <h2 className="font-bold text-amber-900">
+              Restore with caution
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-amber-700">
+              Restoring a backup replaces the current database contents with the selected backup.
+              Create a recent backup first before restoring older data.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* BACKUP LIST */}
+      <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+
+        <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+
+          <div className="flex items-center gap-4">
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+              <FaHistory />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Available Backups
+              </h2>
+
+              <p className="text-sm text-slate-500">
+                {loading
+                  ? "Loading..."
+                  : `${backups.length} backup${
+                      backups.length !==
+                      1
+                        ? "s"
+                        : ""
+                    } available`}
+              </p>
+            </div>
+
+          </div>
+
+          <button
+            type="button"
+            onClick={
+              loadBackups
+            }
+            disabled={
+              loading
+            }
+            className="flex items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+          >
+            <FaSyncAlt
+              className={
+                loading
+                  ? "animate-spin"
+                  : ""
+              }
+            />
+
+            Refresh
+          </button>
+
+        </div>
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full min-w-[900px]">
+
+            <thead className="bg-slate-50">
+              <tr>
+
+                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                  Backup File
+                </th>
+
+                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                  Created
+                </th>
+
+                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                  Size
+                </th>
+
+                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                  Actions
+                </th>
+
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {!loading &&
+                backups.map(
+                  (
+                    backup,
+                    index
+                  ) => {
+                    const fileName =
+                      backup.fileName ||
+                      backup.file_name ||
+                      backup.name ||
+                      `Backup ${index + 1}`;
+
+                    const createdAt =
+                      backup.createdAt ||
+                      backup.created_at ||
+                      backup.modifiedAt ||
+                      backup.modified_at;
+
+                    const fileSize =
+                      backup.size ||
+                      backup.fileSize ||
+                      backup.file_size;
+
+                    return (
+                      <tr
+                        key={
+                          fileName
+                        }
+                        className="border-t border-slate-100 transition hover:bg-blue-50/40"
+                      >
+
+                        <td className="px-5 py-4">
+
+                          <div className="flex items-center gap-3">
+
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                              <FaDatabase />
+                            </div>
+
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {fileName}
+                              </p>
+
+                              <p className="mt-1 text-xs text-slate-400">
+                                PostgreSQL backup
+                              </p>
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          {formatDate(
+                            createdAt
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          {formatFileSize(
+                            fileSize
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4">
+
+                          <div className="flex gap-2">
+
+                            <button
+                              type="button"
+                              disabled={
+                                downloadingFile ===
+                                fileName
+                              }
+                              onClick={() =>
+                                handleDownload(
+                                  backup
+                                )
+                              }
+                              className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+                            >
+                              <FaCloudDownloadAlt />
+
+                              {downloadingFile ===
+                              fileName
+                                ? "Downloading..."
+                                : "Download"}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                restoringFile !==
+                                null
+                              }
+                              onClick={() =>
+                                handleRestore(
+                                  backup
+                                )
+                              }
+                              className="flex items-center gap-2 rounded-lg border border-amber-200 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
+                            >
+                              <FaUndoAlt />
+
+                              {restoringFile ===
+                              fileName
+                                ? "Restoring..."
+                                : "Restore"}
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+        {loading && (
+          <div className="px-6 py-14 text-center text-sm text-slate-400">
+            Loading database backups...
+          </div>
+        )}
+
+        {!loading &&
+          backups.length ===
+            0 && (
+            <div className="px-6 py-14 text-center">
+
+              <FaDatabase className="mx-auto text-3xl text-slate-300" />
+
+              <h2 className="mt-4 font-semibold text-slate-800">
+                No backups available
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Create your first database backup using the button above.
+              </p>
+
+            </div>
+          )}
+
+      </section>
+
+    </AdminLayout>
+  );
 }
 
 export default Backup;

@@ -1,4 +1,5 @@
 import PortalLayout from "./PortalLayout";
+
 import {
     FaHome,
     FaBook,
@@ -11,6 +12,7 @@ import {
     FaChartBar,
     FaClipboardList,
     FaDatabase,
+    FaBullhorn,
 } from "react-icons/fa";
 
 function AdminLayout({ children }) {
@@ -57,6 +59,11 @@ function AdminLayout({ children }) {
             icon: <FaUsersCog />,
         },
         {
+            label: "Announcements",
+            path: "/admin/announcements",
+            icon: <FaBullhorn />,
+        },
+        {
             label: "System Settings",
             path: "/admin/settings",
             icon: <FaCog />,
@@ -78,16 +85,44 @@ function AdminLayout({ children }) {
         },
     ];
 
+    let currentUser = {};
+
+    try {
+        currentUser = JSON.parse(
+            localStorage.getItem("currentUser") || "{}"
+        );
+    } catch {
+        currentUser = {};
+    }
+
+    const fullName = [
+        currentUser.firstName,
+        currentUser.middleName,
+        currentUser.lastName,
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
         <PortalLayout
             links={links}
             role="Administrator"
             navbarProps={{
-                name: "System Administrator",
-                email: "administrator@bcp.edu.ph",
+                name:
+                    fullName ||
+                    "System Administrator",
+
+                email:
+                    currentUser.email ||
+                    currentUser.schoolId ||
+                    "",
+
                 role: "Administrator",
+
                 profilePath: null,
-                settingsPath: "/admin/settings",
+
+                settingsPath:
+                    "/admin/settings",
             }}
         >
             {children}

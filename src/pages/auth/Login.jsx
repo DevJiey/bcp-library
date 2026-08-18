@@ -1,28 +1,142 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { FaUser, FaLock } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import {
+    FaUser,
+    FaLock,
+    FaSpinner,
+} from "react-icons/fa";
+
 import logo from "../../assets/bcp-logo.png";
+import apiRequest from "../../services/api";
 
 function Login() {
     const navigate = useNavigate();
 
-    const [role, setRole] = useState("borrower");
+    const [schoolId, setSchoolId] =
+        useState("");
+    const [password, setPassword] =
+        useState("");
 
-    const handleLogin = () => {
-        localStorage.setItem("userRole", role);
-        if (role === "borrower") navigate("/borrower/dashboard");
-        if (role === "staff") navigate("/staff/dashboard");
-        if (role === "admin") navigate("/admin/dashboard");
+    const [loading, setLoading] =
+        useState(false);
+    const [error, setError] =
+        useState("");
+
+    const handleLogin = async (event) => {
+        event.preventDefault();
+
+        if (
+            !schoolId.trim() ||
+            !password
+        ) {
+            setError(
+                "Please enter your School ID and password."
+            );
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+
+            const response =
+                await apiRequest(
+                    "/auth/login",
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            schoolId:
+                                schoolId.trim(),
+                            password,
+                        }),
+                    }
+                );
+
+            const {
+                token,
+                user,
+            } = response.data;
+
+            localStorage.setItem(
+                "token",
+                token
+            );
+
+            localStorage.setItem(
+                "userRole",
+                user.role
+            );
+
+            localStorage.setItem(
+                "currentUser",
+                JSON.stringify(user)
+            );
+
+            if (
+                user.role === "admin"
+            ) {
+                navigate(
+                    "/admin/dashboard",
+                    {
+                        replace: true,
+                    }
+                );
+                return;
+            }
+
+            if (
+                user.role === "staff"
+            ) {
+                navigate(
+                    "/staff/dashboard",
+                    {
+                        replace: true,
+                    }
+                );
+                return;
+            }
+
+            if (
+                user.role === "borrower"
+            ) {
+                navigate(
+                    "/borrower/dashboard",
+                    {
+                        replace: true,
+                    }
+                );
+                return;
+            }
+
+            localStorage.removeItem(
+                "token"
+            );
+            localStorage.removeItem(
+                "userRole"
+            );
+            localStorage.removeItem(
+                "currentUser"
+            );
+
+            setError(
+                "Your account role is not supported."
+            );
+        } catch (error) {
+            setError(
+                error.message ||
+                "Login failed."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <div className="min-h-screen grid lg:grid-cols-2">
 
             {/* LEFT */}
-
             <div className="relative hidden lg:flex overflow-hidden bg-[#0F4C97] items-center justify-center flex-col gap-5 p-10">
 
-                {/* Background circles */}
                 <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-800/40"></div>
 
                 <div className="absolute top-40 right-[-120px] w-80 h-80 rounded-full bg-blue-700/30"></div>
@@ -34,22 +148,23 @@ function Login() {
                         <span className="whitespace-nowrap">
                             Library Management
                         </span>
+
                         <br />
-                        <span>System</span>
+
+                        <span>
+                            System
+                        </span>
                     </h1>
                 </div>
 
             </div>
 
             {/* RIGHT */}
-
             <div className="bg-white flex items-center justify-center">
 
                 <div className="w-full max-w-md p-10">
 
                     <div className="text-center">
-
-                        {/* LOGO */}
 
                         <img
                             src={logo}
@@ -67,12 +182,14 @@ function Login() {
 
                     </div>
 
-                    <div className="mt-8 space-y-5">
+                    <form
+                        onSubmit={handleLogin}
+                        className="mt-8 space-y-5"
+                    >
 
                         <div>
-
                             <label className="text-sm font-medium">
-                                Username
+                                School ID
                             </label>
 
                             <div className="flex items-center border border-gray-300 rounded-xl mt-2 px-3 transition focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-100">
@@ -81,16 +198,23 @@ function Login() {
 
                                 <input
                                     type="text"
-                                    placeholder="Enter username"
-                                    className="w-full p-3 outline-none"
+                                    value={schoolId}
+                                    onChange={(event) => {
+                                        setSchoolId(
+                                            event.target.value
+                                        );
+                                        setError("");
+                                    }}
+                                    placeholder="Enter School ID"
+                                    autoComplete="username"
+                                    disabled={loading}
+                                    className="w-full p-3 outline-none disabled:bg-transparent"
                                 />
 
                             </div>
-
                         </div>
 
                         <div>
-
                             <label className="text-sm font-medium">
                                 Password
                             </label>
@@ -101,55 +225,50 @@ function Login() {
 
                                 <input
                                     type="password"
+                                    value={password}
+                                    onChange={(event) => {
+                                        setPassword(
+                                            event.target.value
+                                        );
+                                        setError("");
+                                    }}
                                     placeholder="Enter password"
-                                    className="w-full p-3 outline-none"
+                                    autoComplete="current-password"
+                                    disabled={loading}
+                                    className="w-full p-3 outline-none disabled:bg-transparent"
                                 />
 
                             </div>
-
                         </div>
 
-                        <div>
-
-                            <label className="text-sm font-medium">
-                                Login As
-                            </label>
-
-                            <select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl p-3 mt-2 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-                            >
-
-                                <option value="borrower">
-                                    Borrower
-                                </option>
-
-                                <option value="staff">
-                                    Staff
-                                </option>
-
-                                <option value="admin">
-                                    Admin
-                                </option>
-
-                            </select>
-
-                        </div>
+                        {error && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                                {error}
+                            </div>
+                        )}
 
                         <button
-                            onClick={handleLogin}
-                            className="w-full bg-gradient-to-r from-[#0F4C97] to-blue-700 hover:from-blue-800 hover:to-blue-600 active:scale-[0.99] transition-all duration-200 text-white p-4 rounded-xl font-semibold shadow-lg shadow-blue-900/20"
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#0F4C97] to-blue-700 hover:from-blue-800 hover:to-blue-600 active:scale-[0.99] transition-all duration-200 text-white p-4 rounded-xl font-semibold shadow-lg shadow-blue-900/20 disabled:cursor-not-allowed disabled:opacity-70"
                         >
-                            Sign In
+                            {loading ? (
+                                <>
+                                    <FaSpinner className="animate-spin" />
+                                    Signing In...
+                                </>
+                            ) : (
+                                "Sign In"
+                            )}
                         </button>
+
                         <p className="mt-8 text-center text-xs text-gray-400">
                             © 2026 Bestlink College of the Philippines
                             <br />
                             BCP Library Management System
                         </p>
 
-                    </div>
+                    </form>
 
                 </div>
 

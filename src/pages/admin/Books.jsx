@@ -1,150 +1,433 @@
-import { useState } from "react";
-import { useToast } from "../../context/ToastContext";
-import LoadingSkeleton from "../../components/LoadingSkeleton";
-import EmptyState from "../../components/EmptyState";
+import {
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
+
 import {
     FaBook,
     FaPlus,
     FaSearch,
-    FaEdit,
-    FaArchive,
+    FaTimes,
 } from "react-icons/fa";
 
 import AdminLayout from "../../layouts/AdminLayout";
-import adminBooksData from "../../data/adminBooks";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+import apiRequest from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 function AdminBooks() {
-    const [loading, setLoading] = useState(false);
     const { showToast } = useToast();
-    const [books, setBooks] = useState(adminBooksData);
-    const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("All");
-    const [statusFilter, setStatusFilter] = useState("All");
 
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [editingBook, setEditingBook] = useState(null);
+    const [books, setBooks] =
+        useState([]);
 
-    const [newBook, setNewBook] = useState({
-        isbn: "",
-        title: "",
-        author: "",
-        category: "",
-        publisher: "",
-        copies: 1,
-        availableCopies: 1,
-        status: "Active",
-    });
+    const [categories, setCategories] =
+        useState([]);
 
-    const categories = [
-        "All",
-        ...new Set(
-            books.map((book) => book.category)
-        ),
-    ];
+    const [authors, setAuthors] =
+        useState([]);
 
-    const filteredBooks = books.filter((book) => {
-        const keyword = search.toLowerCase();
+    const [publishers, setPublishers] =
+        useState([]);
 
-        const matchesSearch =
-            book.title.toLowerCase().includes(keyword) ||
-            book.author.toLowerCase().includes(keyword) ||
-            book.isbn.toLowerCase().includes(keyword);
+    const [search, setSearch] =
+        useState("");
 
-        const matchesCategory =
-            categoryFilter === "All" ||
-            book.category === categoryFilter;
+    const [categoryFilter, setCategoryFilter] =
+        useState("All");
 
-        const matchesStatus =
-            statusFilter === "All" ||
-            book.status === statusFilter;
+    const [loading, setLoading] =
+        useState(true);
 
-        return (
-            matchesSearch &&
-            matchesCategory &&
-            matchesStatus
-        );
-    });
-    const handleAddBook = () => {
+    const [saving, setSaving] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const [showAddModal, setShowAddModal] =
+        useState(false);
+
+    const [newBook, setNewBook] =
+        useState({
+            isbn: "",
+            title: "",
+            categoryId: "",
+            publisherId: "",
+            publicationYear: "",
+            edition: "",
+            description: "",
+            coverImageUrl: "",
+            authorIds: [],
+        });
+
+    const loadBooks = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const response =
+                await apiRequest(
+                    "/books"
+                );
+
+            setBooks(
+                response?.data || []
+            );
+        } catch (err) {
+            setError(
+                err.message ||
+                    "Failed to load books."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadFormOptions = async () => {
+        try {
+            const [
+                categoriesResponse,
+                authorsResponse,
+                publishersResponse,
+            ] = await Promise.all([
+                apiRequest(
+                    "/categories"
+                ),
+                apiRequest(
+                    "/authors"
+                ),
+                apiRequest(
+                    "/publishers"
+                ),
+            ]);
+
+            setCategories(
+                categoriesResponse?.data ||
+                    []
+            );
+
+            setAuthors(
+                authorsResponse?.data ||
+                    []
+            );
+
+            setPublishers(
+                publishersResponse?.data ||
+                    []
+            );
+        } catch (err) {
+            setError(
+                err.message ||
+                    "Failed to load catalog options."
+            );
+        }
+    };
+
+    useEffect(() => {
+        Promise.all([
+            loadBooks(),
+            loadFormOptions(),
+        ]);
+    }, []);
+
+    const getAuthorName = (
+        author
+    ) =>
+        [
+            author.first_name ??
+                author.firstName,
+            author.middle_name ??
+                author.middleName,
+            author.last_name ??
+                author.lastName,
+        ]
+            .filter(Boolean)
+            .join(" ");
+
+    const getBookAuthors = (
+        book
+    ) => {
         if (
-            !newBook.isbn.trim() ||
-            !newBook.title.trim() ||
-            !newBook.author.trim() ||
-            !newBook.category.trim() ||
-            !newBook.publisher.trim()
+            Array.isArray(
+                book.authors
+            ) &&
+            book.authors.length > 0
         ) {
-            showToast("Please complete all book information.", "error");
-            return;
+            return book.authors
+                .map(
+                    getAuthorName
+                )
+                .filter(Boolean)
+                .join(", ");
         }
 
-        const book = {
-            id: Date.now(),
-            ...newBook,
-            copies: Number(newBook.copies),
-            availableCopies: Number(newBook.availableCopies),
-        };
+        return (
+            book.author_names ||
+            book.authors_name ||
+            "No author assigned"
+        );
+    };
 
-        setBooks([...books, book]);
-        setShowAddModal(false);
+    const getCategoryName = (
+        book
+    ) =>
+        book.category_name ||
+        book.category?.name ||
+        "Uncategorized";
 
+    const getPublisherName = (
+        book
+    ) =>
+        book.publisher_name ||
+        book.publisher?.name ||
+        "Not specified";
+
+    const filteredBooks =
+        useMemo(() => {
+            const keyword =
+                search
+                    .trim()
+                    .toLowerCase();
+
+            return books.filter(
+                (book) => {
+                    const title =
+                        String(
+                            book.title ||
+                                ""
+                        ).toLowerCase();
+
+                    const isbn =
+                        String(
+                            book.isbn ||
+                                ""
+                        ).toLowerCase();
+
+                    const author =
+                        getBookAuthors(
+                            book
+                        ).toLowerCase();
+
+                    const category =
+                        getCategoryName(
+                            book
+                        );
+
+                    const matchesSearch =
+                        !keyword ||
+                        title.includes(
+                            keyword
+                        ) ||
+                        isbn.includes(
+                            keyword
+                        ) ||
+                        author.includes(
+                            keyword
+                        );
+
+                    const matchesCategory =
+                        categoryFilter ===
+                            "All" ||
+                        category ===
+                            categoryFilter;
+
+                    return (
+                        matchesSearch &&
+                        matchesCategory
+                    );
+                }
+            );
+        }, [
+            books,
+            search,
+            categoryFilter,
+        ]);
+
+    const resetForm = () => {
         setNewBook({
             isbn: "",
             title: "",
-            author: "",
-            category: "",
-            publisher: "",
-            copies: 1,
-            availableCopies: 1,
-            status: "Active",
+            categoryId: "",
+            publisherId: "",
+            publicationYear: "",
+            edition: "",
+            description: "",
+            coverImageUrl: "",
+            authorIds: [],
         });
     };
 
-    const handleUpdateBook = () => {
-        if (
-            !editingBook.isbn.trim() ||
-            !editingBook.title.trim() ||
-            !editingBook.author.trim() ||
-            !editingBook.category.trim() ||
-            !editingBook.publisher.trim()
-        ) {
-            showToast("Please complete all book information.", "error");
+    const closeAddModal = () => {
+        if (saving) {
             return;
         }
 
-        setBooks(
-            books.map((book) =>
-                book.id === editingBook.id
-                    ? {
-                        ...editingBook,
-                        copies: Number(editingBook.copies),
-                        availableCopies: Number(editingBook.availableCopies),
-                    }
-                    : book
-            )
-        );
-
-        setEditingBook(null);
+        setShowAddModal(false);
+        resetForm();
     };
 
-    const toggleArchive = (id) => {
-        setBooks(
-            books.map((book) =>
-                book.id === id
-                    ? {
-                        ...book,
-                        status:
-                            book.status === "Active"
-                                ? "Archived"
-                                : "Active",
-                    }
-                    : book
-            )
+    const toggleAuthor = (
+        authorId
+    ) => {
+        setNewBook(
+            (current) => {
+                const id =
+                    String(
+                        authorId
+                    );
+
+                const exists =
+                    current.authorIds.some(
+                        (
+                            selectedId
+                        ) =>
+                            String(
+                                selectedId
+                            ) ===
+                            id
+                    );
+
+                return {
+                    ...current,
+
+                    authorIds:
+                        exists
+                            ? current.authorIds.filter(
+                                  (
+                                      selectedId
+                                  ) =>
+                                      String(
+                                          selectedId
+                                      ) !==
+                                      id
+                              )
+                            : [
+                                  ...current.authorIds,
+                                  Number(
+                                      authorId
+                                  ),
+                              ],
+                };
+            }
         );
     };
+
+    const handleAddBook =
+        async (event) => {
+            event.preventDefault();
+
+            if (
+                !newBook.title.trim()
+            ) {
+                showToast(
+                    "Book title is required.",
+                    "error"
+                );
+
+                return;
+            }
+
+            try {
+                setSaving(true);
+                setError("");
+
+                const payload = {
+                    isbn:
+                        newBook.isbn.trim() ||
+                        null,
+
+                    title:
+                        newBook.title.trim(),
+
+                    categoryId:
+                        newBook.categoryId
+                            ? Number(
+                                  newBook.categoryId
+                              )
+                            : null,
+
+                    publisherId:
+                        newBook.publisherId
+                            ? Number(
+                                  newBook.publisherId
+                              )
+                            : null,
+
+                    publicationYear:
+                        newBook.publicationYear
+                            ? Number(
+                                  newBook.publicationYear
+                              )
+                            : null,
+
+                    edition:
+                        newBook.edition.trim() ||
+                        null,
+
+                    description:
+                        newBook.description.trim() ||
+                        null,
+
+                    coverImageUrl:
+                        newBook.coverImageUrl.trim() ||
+                        null,
+
+                    authorIds:
+                        newBook.authorIds,
+                };
+
+                await apiRequest(
+                    "/books",
+                    {
+                        method: "POST",
+
+                        body: JSON.stringify(
+                            payload
+                        ),
+                    }
+                );
+
+                showToast(
+                    "Book created successfully!",
+                    "success"
+                );
+
+                closeAddModal();
+
+                await loadBooks();
+            } catch (err) {
+                const message =
+                    err.message ||
+                    "Failed to create book.";
+
+                setError(
+                    message
+                );
+
+                showToast(
+                    message,
+                    "error"
+                );
+            } finally {
+                setSaving(false);
+            }
+        };
+
+    const categoryOptions = [
+        "All",
+        ...categories.map(
+            (category) =>
+                category.name
+        ),
+    ];
 
     return (
         <AdminLayout>
-            {/* Page Header */}
+            {/* HEADER */}
             <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+
                 <div>
                     <p className="text-sm font-semibold text-blue-700">
                         Library Catalog
@@ -153,22 +436,41 @@ function AdminBooks() {
                     <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                         Book Management
                     </h1>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                        Manage titles in the library catalog.
+                        Physical copies are managed separately under Book Copies.
+                    </p>
                 </div>
 
                 <button
                     type="button"
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-3 py-2 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                    onClick={() =>
+                        setShowAddModal(
+                            true
+                        )
+                    }
+                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800"
                 >
                     <FaPlus />
                     Add New Book
                 </button>
+
             </div>
 
-            {/* Search and Filters */}
+            {error && (
+                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    {error}
+                </div>
+            )}
+
+            {/* SEARCH */}
             <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+
                     <div className="flex items-center gap-4">
+
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                             <FaBook />
                         </div>
@@ -179,73 +481,89 @@ function AdminBooks() {
                             </h2>
 
                             <p className="text-sm text-slate-500">
-                                {filteredBooks.length} book
-                                {filteredBooks.length !== 1
+                                {
+                                    filteredBooks.length
+                                }{" "}
+                                book
+                                {filteredBooks.length !==
+                                1
                                     ? "s"
                                     : ""}{" "}
                                 found
                             </p>
                         </div>
+
                     </div>
 
                     <div className="flex flex-col gap-3 md:flex-row">
+
                         <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
+
                             <FaSearch className="text-slate-400" />
 
                             <input
                                 type="text"
                                 placeholder="Search title, author, or ISBN..."
-                                value={search}
-                                onChange={(e) =>
-                                    setSearch(e.target.value)
+                                value={
+                                    search
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    setSearch(
+                                        event
+                                            .target
+                                            .value
+                                    )
                                 }
                                 className="w-full px-3 py-2 outline-none md:w-64"
                             />
+
                         </div>
 
                         <select
-                            value={categoryFilter}
-                            onChange={(e) =>
-                                setCategoryFilter(e.target.value)
+                            value={
+                                categoryFilter
                             }
-                            className="rounded-xl border border-slate-300 px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                            onChange={(
+                                event
+                            ) =>
+                                setCategoryFilter(
+                                    event
+                                        .target
+                                        .value
+                                )
+                            }
+                            className="rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
                         >
-                            {categories.map((category) => (
-                                <option
-                                    key={category}
-                                    value={category}
-                                >
-                                    {category === "All"
-                                        ? "All Categories"
-                                        : category}
-                                </option>
-                            ))}
+                            {categoryOptions.map(
+                                (
+                                    category
+                                ) => (
+                                    <option
+                                        key={
+                                            category
+                                        }
+                                        value={
+                                            category
+                                        }
+                                    >
+                                        {category ===
+                                        "All"
+                                            ? "All Categories"
+                                            : category}
+                                    </option>
+                                )
+                            )}
                         </select>
 
-                        <select
-                            value={statusFilter}
-                            onChange={(e) =>
-                                setStatusFilter(e.target.value)
-                            }
-                            className="rounded-xl border border-slate-300 px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
-                        >
-                            <option value="All">
-                                All Status
-                            </option>
-
-                            <option value="Active">
-                                Active
-                            </option>
-
-                            <option value="Archived">
-                                Archived
-                            </option>
-                        </select>
                     </div>
+
                 </div>
+
             </section>
 
-            {/* Books Table */}
+            {/* TABLE */}
             {loading ? (
                 <LoadingSkeleton
                     rows={5}
@@ -253,8 +571,11 @@ function AdminBooks() {
                 />
             ) : (
                 <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[1100px]">
+
+                        <table className="w-full min-w-[1050px]">
+
                             <thead className="bg-slate-50">
                                 <tr>
                                     <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
@@ -266,133 +587,155 @@ function AdminBooks() {
                                     </th>
 
                                     <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                                        Author
+                                    </th>
+
+                                    <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
                                         Category
                                     </th>
 
                                     <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                        Copies
+                                        Publisher
                                     </th>
 
                                     <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
                                         Status
                                     </th>
-
-                                    <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                        Actions
-                                    </th>
                                 </tr>
                             </thead>
 
                             <tbody>
-                                {filteredBooks.map((book) => (
-                                    <tr
-                                        key={book.id}
-                                        className="border-t border-slate-100 transition hover:bg-blue-50/40"
-                                    >
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                                    <FaBook />
+
+                                {filteredBooks.map(
+                                    (book) => (
+                                        <tr
+                                            key={
+                                                book.id
+                                            }
+                                            className="border-t border-slate-100 transition hover:bg-blue-50/40"
+                                        >
+
+                                            <td className="px-5 py-4">
+
+                                                <div className="flex items-center gap-3">
+
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                                                        <FaBook />
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900">
+                                                            {
+                                                                book.title
+                                                            }
+                                                        </p>
+
+                                                        {book.edition && (
+                                                            <p className="mt-1 text-xs text-slate-400">
+                                                                Edition:{" "}
+                                                                {
+                                                                    book.edition
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
                                                 </div>
 
-                                                <div>
-                                                    <p className="font-semibold text-slate-900">
-                                                        {book.title}
-                                                    </p>
+                                            </td>
 
-                                                    <p className="mt-1 text-sm text-slate-500">
-                                                        {book.author}
-                                                    </p>
+                                            <td className="px-5 py-4 text-sm text-slate-600">
+                                                {book.isbn ||
+                                                    "—"}
+                                            </td>
 
-                                                    <p className="mt-1 text-xs text-slate-400">
-                                                        {book.publisher}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
+                                            <td className="px-5 py-4 text-sm text-slate-600">
+                                                {getBookAuthors(
+                                                    book
+                                                )}
+                                            </td>
 
-                                        <td className="px-5 py-4 text-sm text-slate-600">
-                                            {book.isbn}
-                                        </td>
+                                            <td className="px-5 py-4">
 
-                                        <td className="px-5 py-4">
-                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                                {book.category}
-                                            </span>
-                                        </td>
+                                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                    {getCategoryName(
+                                                        book
+                                                    )}
+                                                </span>
 
-                                        <td className="px-5 py-4">
-                                            <p className="font-semibold text-slate-900">
-                                                {book.availableCopies} available
-                                            </p>
+                                            </td>
 
-                                            <p className="mt-1 text-xs text-slate-400">
-                                                {book.copies} total copies
-                                            </p>
-                                        </td>
+                                            <td className="px-5 py-4 text-sm text-slate-600">
+                                                {getPublisherName(
+                                                    book
+                                                )}
+                                            </td>
 
-                                        <td className="px-5 py-4">
-                                            <span
-                                                className={`rounded-full px-3 py-1 text-xs font-semibold ${book.status === "Active"
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-slate-200 text-slate-600"
+                                            <td className="px-5 py-4">
+
+                                                <span
+                                                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                        book.is_active ===
+                                                        false
+                                                            ? "bg-slate-100 text-slate-600"
+                                                            : "bg-emerald-100 text-emerald-700"
                                                     }`}
-                                            >
-                                                {book.status}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditingBook({ ...book })}
-                                                    className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
                                                 >
-                                                    <FaEdit />
-                                                    Edit
-                                                </button>
+                                                    {book.is_active ===
+                                                    false
+                                                        ? "Inactive"
+                                                        : "Active"}
+                                                </span>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleArchive(book.id)}
-                                                    className="flex items-center gap-2 rounded-lg border border-amber-200 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
-                                                >
-                                                    <FaArchive />
-                                                    {book.status === "Active" ? "Archive" : "Restore"}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+
+                                        </tr>
+                                    )
+                                )}
+
                             </tbody>
+
                         </table>
+
                     </div>
+
+                    {filteredBooks.length ===
+                        0 && (
+                        <div className="px-6 py-14 text-center">
+
+                            <FaBook className="mx-auto text-3xl text-slate-300" />
+
+                            <h2 className="mt-4 font-semibold text-slate-800">
+                                No books found
+                            </h2>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                                Try changing the search or category filter.
+                            </p>
+
+                        </div>
+                    )}
+
                 </section>
             )}
-            {/* Empty State */}
-            {loading ? (
-                <LoadingSkeleton rows={5} columns={6} />
-            ) : filteredBooks.length > 0 ? (
-                <section>
-                    {/* table */}
-                </section>
-            ) : (
-                <EmptyState
-                    icon={<FaBook />}
-                    title="No books found"
-                    message="Try changing your search keyword or selected filters."
-                    actionLabel="Add New Book"
-                    onAction={() => setShowAddModal(true)}
-                />
-            )}
+
+            {/* ADD BOOK MODAL */}
             {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-                    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
+
+                    <form
+                        onSubmit={
+                            handleAddBook
+                        }
+                        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+                    >
+
+                        {/* HEADER */}
+                        <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
+
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
-                                    Library Catalog
+                                    Catalog Record
                                 </p>
 
                                 <h2 className="mt-1 text-xl font-bold">
@@ -402,220 +745,379 @@ function AdminBooks() {
 
                             <button
                                 type="button"
-                                onClick={() => setShowAddModal(false)}
-                                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15"
+                                disabled={
+                                    saving
+                                }
+                                onClick={
+                                    closeAddModal
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15 disabled:opacity-50"
                             >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className="grid gap-5 p-6 md:grid-cols-2">
-                            <BookField
-                                label="ISBN"
-                                value={newBook.isbn}
-                                onChange={(value) =>
-                                    setNewBook({ ...newBook, isbn: value })
-                                }
-                            />
-
-                            <BookField
-                                label="Book Title"
-                                value={newBook.title}
-                                onChange={(value) =>
-                                    setNewBook({ ...newBook, title: value })
-                                }
-                            />
-
-                            <BookField
-                                label="Author"
-                                value={newBook.author}
-                                onChange={(value) =>
-                                    setNewBook({ ...newBook, author: value })
-                                }
-                            />
-
-                            <BookField
-                                label="Category"
-                                value={newBook.category}
-                                onChange={(value) =>
-                                    setNewBook({ ...newBook, category: value })
-                                }
-                            />
-
-                            <BookField
-                                label="Publisher"
-                                value={newBook.publisher}
-                                onChange={(value) =>
-                                    setNewBook({ ...newBook, publisher: value })
-                                }
-                            />
-
-                            <BookField
-                                label="Total Copies"
-                                type="number"
-                                value={newBook.copies}
-                                onChange={(value) =>
-                                    setNewBook({
-                                        ...newBook,
-                                        copies: value,
-                                        availableCopies: value,
-                                    })
-                                }
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
-                            <button
-                                type="button"
-                                onClick={() => setShowAddModal(false)}
-                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                                Cancel
+                                <FaTimes />
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={handleAddBook}
-                                className="rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
-                            >
-                                Save Book
-                            </button>
                         </div>
-                    </div>
-                </div>
-            )}
-            {editingBook && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-                    <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 text-white">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-amber-100">
-                                    Catalog Record
-                                </p>
 
-                                <h2 className="mt-1 text-xl font-bold">
-                                    Edit Book
-                                </h2>
+                        {/* FORM */}
+                        <div className="overflow-y-auto p-6">
+
+                            <div className="grid gap-5 md:grid-cols-2">
+
+                                <BookField
+                                    label="ISBN"
+                                    value={
+                                        newBook.isbn
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewBook({
+                                            ...newBook,
+                                            isbn: value,
+                                        })
+                                    }
+                                    placeholder="Optional ISBN"
+                                />
+
+                                <BookField
+                                    label="Book Title *"
+                                    value={
+                                        newBook.title
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewBook({
+                                            ...newBook,
+                                            title: value,
+                                        })
+                                    }
+                                    placeholder="Enter book title"
+                                />
+
+                                {/* CATEGORY */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Category
+                                    </label>
+
+                                    <select
+                                        value={
+                                            newBook.categoryId
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewBook({
+                                                ...newBook,
+                                                categoryId:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        <option value="">
+                                            No category
+                                        </option>
+
+                                        {categories
+                                            .filter(
+                                                (
+                                                    category
+                                                ) =>
+                                                    category.is_active !==
+                                                    false
+                                            )
+                                            .map(
+                                                (
+                                                    category
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            category.id
+                                                        }
+                                                        value={
+                                                            category.id
+                                                        }
+                                                    >
+                                                        {
+                                                            category.name
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                    </select>
+                                </div>
+
+                                {/* PUBLISHER */}
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Publisher
+                                    </label>
+
+                                    <select
+                                        value={
+                                            newBook.publisherId
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewBook({
+                                                ...newBook,
+                                                publisherId:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        <option value="">
+                                            No publisher
+                                        </option>
+
+                                        {publishers
+                                            .filter(
+                                                (
+                                                    publisher
+                                                ) =>
+                                                    publisher.is_active !==
+                                                    false
+                                            )
+                                            .map(
+                                                (
+                                                    publisher
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            publisher.id
+                                                        }
+                                                        value={
+                                                            publisher.id
+                                                        }
+                                                    >
+                                                        {
+                                                            publisher.name
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                    </select>
+                                </div>
+
+                                <BookField
+                                    label="Publication Year"
+                                    type="number"
+                                    value={
+                                        newBook.publicationYear
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewBook({
+                                            ...newBook,
+                                            publicationYear:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="2026"
+                                />
+
+                                <BookField
+                                    label="Edition"
+                                    value={
+                                        newBook.edition
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewBook({
+                                            ...newBook,
+                                            edition:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="e.g. 3rd Edition"
+                                />
+
+                                <div className="md:col-span-2">
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Authors
+                                    </label>
+
+                                    <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 p-3">
+
+                                        {authors.length ===
+                                        0 ? (
+                                            <p className="p-2 text-sm text-slate-400">
+                                                No authors available.
+                                            </p>
+                                        ) : (
+                                            <div className="grid gap-2 sm:grid-cols-2">
+
+                                                {authors
+                                                    .filter(
+                                                        (
+                                                            author
+                                                        ) =>
+                                                            author.is_active !==
+                                                            false
+                                                    )
+                                                    .map(
+                                                        (
+                                                            author
+                                                        ) => {
+                                                            const checked =
+                                                                newBook.authorIds.some(
+                                                                    (
+                                                                        id
+                                                                    ) =>
+                                                                        String(
+                                                                            id
+                                                                        ) ===
+                                                                        String(
+                                                                            author.id
+                                                                        )
+                                                                );
+
+                                                            return (
+                                                                <label
+                                                                    key={
+                                                                        author.id
+                                                                    }
+                                                                    className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+                                                                        checked
+                                                                            ? "border-blue-300 bg-blue-50 text-blue-800"
+                                                                            : "border-slate-100 hover:bg-slate-50"
+                                                                    }`}
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={
+                                                                            checked
+                                                                        }
+                                                                        onChange={() =>
+                                                                            toggleAuthor(
+                                                                                author.id
+                                                                            )
+                                                                        }
+                                                                    />
+
+                                                                    <span className="font-medium">
+                                                                        {getAuthorName(
+                                                                            author
+                                                                        )}
+                                                                    </span>
+                                                                </label>
+                                                            );
+                                                        }
+                                                    )}
+
+                                            </div>
+                                        )}
+
+                                    </div>
+                                </div>
+
+                                <BookField
+                                    label="Cover Image URL"
+                                    value={
+                                        newBook.coverImageUrl
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewBook({
+                                            ...newBook,
+                                            coverImageUrl:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="Optional image URL"
+                                />
+
+                                <div className="md:col-span-2">
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Description
+                                    </label>
+
+                                    <textarea
+                                        value={
+                                            newBook.description
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewBook({
+                                                ...newBook,
+                                                description:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        rows={4}
+                                        placeholder="Optional book description..."
+                                        className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </div>
+
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={() => setEditingBook(null)}
-                                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15"
-                            >
-                                ×
-                            </button>
+                            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-700">
+                                After creating the book title, add its physical copies from the
+                                <strong> Book Copies </strong>
+                                page where the accession number, barcode, shelf location, and condition are recorded.
+                            </div>
+
                         </div>
 
-                        <div className="grid gap-5 p-6 md:grid-cols-2">
-                            <BookField
-                                label="ISBN"
-                                value={editingBook.isbn}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        isbn: value,
-                                    })
-                                }
-                            />
+                        {/* ACTIONS */}
+                        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-white px-6 py-5">
 
-                            <BookField
-                                label="Book Title"
-                                value={editingBook.title}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        title: value,
-                                    })
-                                }
-                            />
-
-                            <BookField
-                                label="Author"
-                                value={editingBook.author}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        author: value,
-                                    })
-                                }
-                            />
-
-                            <BookField
-                                label="Category"
-                                value={editingBook.category}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        category: value,
-                                    })
-                                }
-                            />
-
-                            <BookField
-                                label="Publisher"
-                                value={editingBook.publisher}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        publisher: value,
-                                    })
-                                }
-                            />
-
-                            <BookField
-                                label="Total Copies"
-                                type="number"
-                                value={editingBook.copies}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        copies: value,
-                                    })
-                                }
-                            />
-
-                            <BookField
-                                label="Available Copies"
-                                type="number"
-                                value={editingBook.availableCopies}
-                                onChange={(value) =>
-                                    setEditingBook({
-                                        ...editingBook,
-                                        availableCopies: value,
-                                    })
-                                }
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
                             <button
                                 type="button"
-                                onClick={() => setEditingBook(null)}
-                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+                                disabled={
+                                    saving
+                                }
+                                onClick={
+                                    closeAddModal
+                                }
+                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                             >
                                 Cancel
                             </button>
 
                             <button
-                                type="button"
-                                onClick={handleUpdateBook}
-                                className="rounded-xl bg-amber-500 px-5 py-3 font-semibold text-white transition hover:bg-amber-600"
+                                type="submit"
+                                disabled={
+                                    saving
+                                }
+                                className="rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Update Book
+                                {saving
+                                    ? "Saving..."
+                                    : "Save Book"}
                             </button>
+
                         </div>
-                    </div>
+
+                    </form>
                 </div>
             )}
+
         </AdminLayout>
     );
 }
+
 function BookField({
     label,
     value,
     onChange,
     type = "text",
+    placeholder = "",
 }) {
     return (
         <div>
@@ -625,9 +1127,18 @@ function BookField({
 
             <input
                 type={type}
-                min={type === "number" ? 0 : undefined}
+                min={
+                    type === "number"
+                        ? 0
+                        : undefined
+                }
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                onChange={(event) =>
+                    onChange(
+                        event.target.value
+                    )
+                }
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
             />
         </div>

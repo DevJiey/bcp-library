@@ -1,14 +1,51 @@
 import { Navigate } from "react-router-dom";
 
-function ProtectedRoute({ allowedRole, children }) {
-    const userRole = localStorage.getItem("userRole");
+function ProtectedRoute({
+    children,
+    allowedRole,
+}) {
+    const token =
+        localStorage.getItem("token");
 
-    if (!userRole) {
-        return <Navigate to="/" replace />;
+    const userRole =
+        localStorage.getItem("userRole");
+
+    // Walang login/token
+    if (!token) {
+        return (
+            <Navigate
+                to="/"
+                replace
+            />
+        );
     }
 
-    if (userRole !== allowedRole) {
-        return <Navigate to="/access-denied" replace />;
+    // May token pero walang stored role
+    if (!userRole) {
+        localStorage.removeItem("token");
+        localStorage.removeItem(
+            "currentUser"
+        );
+
+        return (
+            <Navigate
+                to="/"
+                replace
+            />
+        );
+    }
+
+    // Wrong role
+    if (
+        allowedRole &&
+        userRole !== allowedRole
+    ) {
+        return (
+            <Navigate
+                to="/access-denied"
+                replace
+            />
+        );
     }
 
     return children;

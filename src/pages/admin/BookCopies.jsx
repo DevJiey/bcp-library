@@ -1,113 +1,410 @@
-import { useState } from "react";
-import { useToast } from "../../context/ToastContext";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+import JsBarcode from "jsbarcode";
+
 import {
     FaBarcode,
     FaCopy,
-    FaEdit,
     FaPlus,
     FaSearch,
+    FaBook,
+    FaTimes,
 } from "react-icons/fa";
 
 import AdminLayout from "../../layouts/AdminLayout";
-import bookCopiesData from "../../data/bookCopies";
+import apiRequest from "../../services/api";
+import { useToast } from "../../context/ToastContext";
 
 function BookCopies() {
     const { showToast } = useToast();
-    const [copies, setCopies] = useState(bookCopiesData);
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [editingCopy, setEditingCopy] = useState(null);
 
-    const [newCopy, setNewCopy] = useState({
-        barcode: "",
-        accessionNumber: "",
-        bookTitle: "",
-        shelf: "",
-        status: "Available",
-    });
+    const [copies, setCopies] =
+        useState([]);
 
-    const filteredCopies = copies.filter((copy) => {
-        const keyword = search.toLowerCase();
+    const [books, setBooks] =
+        useState([]);
 
-        const matchesSearch =
-            copy.barcode.toLowerCase().includes(keyword) ||
-            copy.accessionNumber.toLowerCase().includes(keyword) ||
-            copy.bookTitle.toLowerCase().includes(keyword);
+    const [search, setSearch] =
+        useState("");
 
-        const matchesStatus =
-            statusFilter === "All" ||
-            copy.status === statusFilter;
+    const [statusFilter, setStatusFilter] =
+        useState("All");
 
-        return matchesSearch && matchesStatus;
-    });
+    const [loading, setLoading] =
+        useState(true);
 
-    const handleAddCopy = () => {
-        if (
-            !newCopy.barcode.trim() ||
-            !newCopy.accessionNumber.trim() ||
-            !newCopy.bookTitle.trim() ||
-            !newCopy.shelf.trim()
-        ) {
-            showToast("Please complete all copy information.", "error");
-            return;
-        }
+    const [saving, setSaving] =
+        useState(false);
 
-        setCopies([
-            ...copies,
-            {
-                id: Date.now(),
-                ...newCopy,
-            },
-        ]);
+    const [error, setError] =
+        useState("");
 
-        setShowAddModal(false);
+    const [showAddModal, setShowAddModal] =
+        useState(false);
 
-        setNewCopy({
-            barcode: "",
+    const [selectedCopy, setSelectedCopy] =
+        useState(null);
+
+    const barcodeRef =
+        useRef(null);
+
+    const [newCopy, setNewCopy] =
+        useState({
+            bookId: "",
             accessionNumber: "",
-            bookTitle: "",
-            shelf: "",
-            status: "Available",
+            barcode: "",
+            shelfLocation: "",
+            condition: "good",
+            acquiredAt: "",
         });
+
+    const loadCopies = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const response =
+                await apiRequest(
+                    "/book-copies"
+                );
+
+            setCopies(
+                response?.data || []
+            );
+        } catch (err) {
+            setError(
+                err.message ||
+                "Failed to load book copies."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleUpdateCopy = () => {
-        setCopies(
-            copies.map((copy) =>
-                copy.id === editingCopy.id
-                    ? editingCopy
-                    : copy
-            )
+    const loadBooks = async () => {
+        try {
+            const response =
+                await apiRequest(
+                    "/books"
+                );
+
+            setBooks(
+                response?.data || []
+            );
+        } catch (err) {
+            setError(
+                err.message ||
+                "Failed to load books."
+            );
+        }
+    };
+
+    useEffect(() => {
+        loadCopies();
+        loadBooks();
+    }, []);
+
+    useEffect(() => {
+        if (
+            selectedCopy?.barcode &&
+            barcodeRef.current
+        ) {
+            JsBarcode(
+                barcodeRef.current,
+                selectedCopy.barcode,
+                {
+                    format: "CODE128",
+                    width: 2,
+                    height: 80,
+                    displayValue: true,
+                    fontSize: 16,
+                    margin: 10,
+                }
+            );
+        }
+    }, [selectedCopy]);
+
+    const getBookTitle = (
+        copy
+    ) => {
+        return (
+            copy.title ||
+            copy.book_title ||
+            copy.book?.title ||
+            "Library Book"
         );
-
-        setEditingCopy(null);
     };
 
-    const getStatusStyle = (status) => {
-        if (status === "Available") {
+    const getStatus = (
+        copy
+    ) => {
+        return (
+            copy.status ||
+            "available"
+        ).toLowerCase();
+    };
+
+    const getCondition = (
+        copy
+    ) => {
+        return (
+            copy.condition ||
+            "good"
+        ).toLowerCase();
+    };
+
+    const getStatusStyle = (
+        status
+    ) => {
+        if (
+            status ===
+            "available"
+        ) {
             return "bg-emerald-100 text-emerald-700";
         }
 
-        if (status === "Borrowed") {
+        if (
+            status ===
+            "borrowed"
+        ) {
             return "bg-blue-100 text-blue-700";
         }
 
-        if (status === "Reserved") {
-            return "bg-amber-100 text-amber-700";
+        if (
+            status ===
+            "overdue"
+        ) {
+            return "bg-red-100 text-red-700";
         }
 
-        if (status === "Damaged") {
+        if (
+            status ===
+            "damaged"
+        ) {
             return "bg-orange-100 text-orange-700";
         }
 
-        return "bg-red-100 text-red-700";
+        if (
+            status ===
+            "lost"
+        ) {
+            return "bg-red-100 text-red-700";
+        }
+
+        return "bg-slate-100 text-slate-700";
     };
+
+    const getConditionStyle = (
+        condition
+    ) => {
+        if (
+            condition ===
+            "excellent"
+        ) {
+            return "bg-emerald-100 text-emerald-700";
+        }
+
+        if (
+            condition === "good"
+        ) {
+            return "bg-blue-100 text-blue-700";
+        }
+
+        if (
+            condition === "fair"
+        ) {
+            return "bg-amber-100 text-amber-700";
+        }
+
+        if (
+            condition ===
+            "poor" ||
+            condition ===
+            "damaged"
+        ) {
+            return "bg-red-100 text-red-700";
+        }
+
+        return "bg-slate-100 text-slate-700";
+    };
+
+    const filteredCopies =
+        useMemo(() => {
+            const keyword =
+                search
+                    .trim()
+                    .toLowerCase();
+
+            return copies.filter(
+                (copy) => {
+                    const barcode =
+                        String(
+                            copy.barcode ||
+                            ""
+                        ).toLowerCase();
+
+                    const accession =
+                        String(
+                            copy.accession_number ||
+                            copy.accessionNumber ||
+                            ""
+                        ).toLowerCase();
+
+                    const title =
+                        getBookTitle(
+                            copy
+                        ).toLowerCase();
+
+                    const status =
+                        getStatus(
+                            copy
+                        );
+
+                    const matchesSearch =
+                        !keyword ||
+                        barcode.includes(
+                            keyword
+                        ) ||
+                        accession.includes(
+                            keyword
+                        ) ||
+                        title.includes(
+                            keyword
+                        );
+
+                    const matchesStatus =
+                        statusFilter ===
+                        "All" ||
+                        status ===
+                        statusFilter.toLowerCase();
+
+                    return (
+                        matchesSearch &&
+                        matchesStatus
+                    );
+                }
+            );
+        }, [
+            copies,
+            search,
+            statusFilter,
+        ]);
+
+    const resetForm = () => {
+        setNewCopy({
+            bookId: "",
+            accessionNumber: "",
+            barcode: "",
+            shelfLocation: "",
+            condition: "good",
+            acquiredAt: "",
+        });
+    };
+
+    const closeModal = () => {
+        if (saving) {
+            return;
+        }
+
+        setShowAddModal(false);
+        resetForm();
+    };
+
+    const handleAddCopy =
+        async (event) => {
+            event.preventDefault();
+
+            if (
+                !newCopy.bookId ||
+                !newCopy.accessionNumber.trim() ||
+                !newCopy.barcode.trim()
+            ) {
+                showToast(
+                    "Book, accession number, and barcode are required.",
+                    "error"
+                );
+
+                return;
+            }
+
+            try {
+                setSaving(true);
+                setError("");
+
+                const payload = {
+                    bookId:
+                        Number(
+                            newCopy.bookId
+                        ),
+
+                    accessionNumber:
+                        newCopy.accessionNumber.trim(),
+
+                    barcode:
+                        newCopy.barcode.trim(),
+
+                    shelfLocation:
+                        newCopy.shelfLocation.trim() ||
+                        null,
+
+                    condition:
+                        newCopy.condition,
+
+                    acquiredAt:
+                        newCopy.acquiredAt ||
+                        null,
+                };
+
+                await apiRequest(
+                    "/book-copies",
+                    {
+                        method: "POST",
+
+                        body: JSON.stringify(
+                            payload
+                        ),
+                    }
+                );
+
+                showToast(
+                    "Book copy created successfully!",
+                    "success"
+                );
+
+                setShowAddModal(
+                    false
+                );
+
+                resetForm();
+
+                await loadCopies();
+            } catch (err) {
+                const message =
+                    err.message ||
+                    "Failed to create book copy.";
+
+                setError(
+                    message
+                );
+
+                showToast(
+                    message,
+                    "error"
+                );
+            } finally {
+                setSaving(false);
+            }
+        };
 
     return (
         <AdminLayout>
-            {/* Header */}
+            {/* HEADER */}
             <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+
                 <div>
                     <p className="text-sm font-semibold text-blue-700">
                         Library Inventory
@@ -116,22 +413,41 @@ function BookCopies() {
                     <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                         Book Copies Management
                     </h1>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                        Manage physical copies, accession numbers,
+                        barcodes, shelf locations, and conditions.
+                    </p>
                 </div>
 
                 <button
                     type="button"
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center justify-center gap-1 rounded-xl bg-[#0F4C97] px-3 py-2 font-semibold text-white transition hover:bg-blue-800"
+                    onClick={() =>
+                        setShowAddModal(
+                            true
+                        )
+                    }
+                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
                 >
                     <FaPlus />
                     Add Book Copy
                 </button>
+
             </div>
 
-            {/* Toolbar */}
+            {error && (
+                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    {error}
+                </div>
+            )}
+
+            {/* TOOLBAR */}
             <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
                     <div className="flex items-center gap-4">
+
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                             <FaCopy />
                         </div>
@@ -142,47 +458,97 @@ function BookCopies() {
                             </h2>
 
                             <p className="text-sm text-slate-500">
-                                {filteredCopies.length} copy
-                                {filteredCopies.length !== 1 ? "ies" : "y"} found
+                                {loading
+                                    ? "Loading..."
+                                    : `${filteredCopies.length} ${filteredCopies.length ===
+                                        1
+                                        ? "copy"
+                                        : "copies"
+                                    } found`}
                             </p>
                         </div>
+
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">
-                        <div className="flex items-center rounded-xl border border-slate-300 px-3 focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
+
+                        <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
+
                             <FaSearch className="text-slate-400" />
 
                             <input
                                 type="text"
                                 placeholder="Search barcode, accession no., or book..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                value={
+                                    search
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    setSearch(
+                                        event
+                                            .target
+                                            .value
+                                    )
+                                }
                                 className="w-full px-3 py-2 outline-none sm:w-72"
                             />
+
                         </div>
 
                         <select
-                            value={statusFilter}
-                            onChange={(e) =>
-                                setStatusFilter(e.target.value)
+                            value={
+                                statusFilter
                             }
-                            className="rounded-xl border border-slate-300 px-4 py-2 outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                            onChange={(
+                                event
+                            ) =>
+                                setStatusFilter(
+                                    event
+                                        .target
+                                        .value
+                                )
+                            }
+                            className="rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
                         >
-                            <option value="All">All Status</option>
-                            <option value="Available">Available</option>
-                            <option value="Borrowed">Borrowed</option>
-                            <option value="Reserved">Reserved</option>
-                            <option value="Lost">Lost</option>
-                            <option value="Damaged">Damaged</option>
+                            <option value="All">
+                                All Status
+                            </option>
+
+                            <option value="Available">
+                                Available
+                            </option>
+
+                            <option value="Borrowed">
+                                Borrowed
+                            </option>
+
+                            <option value="Overdue">
+                                Overdue
+                            </option>
+
+                            <option value="Damaged">
+                                Damaged
+                            </option>
+
+                            <option value="Lost">
+                                Lost
+                            </option>
                         </select>
+
                     </div>
+
                 </div>
+
             </section>
 
-            {/* Table */}
+            {/* TABLE */}
             <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1000px]">
+
+                    <table className="w-full min-w-[1100px]">
+
                         <thead className="bg-slate-50">
                             <tr>
                                 <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
@@ -202,9 +568,12 @@ function BookCopies() {
                                 </th>
 
                                 <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
-                                    Status
+                                    Condition
                                 </th>
 
+                                <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
+                                    Status
+                                </th>
                                 <th className="px-5 py-4 text-left text-sm font-semibold text-slate-700">
                                     Action
                                 </th>
@@ -212,210 +581,616 @@ function BookCopies() {
                         </thead>
 
                         <tbody>
-                            {filteredCopies.map((copy) => (
-                                <tr
-                                    key={copy.id}
-                                    className="border-t border-slate-100 transition hover:bg-blue-50/40"
-                                >
-                                    <td className="px-5 py-4">
-                                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                                            <FaBarcode className="text-slate-400" />
-                                            {copy.barcode}
-                                        </div>
-                                    </td>
 
-                                    <td className="px-5 py-4">
-                                        <p className="font-semibold text-slate-900">
-                                            {copy.bookTitle}
-                                        </p>
-                                    </td>
+                            {!loading &&
+                                filteredCopies.map(
+                                    (copy) => {
+                                        const status =
+                                            getStatus(
+                                                copy
+                                            );
 
-                                    <td className="px-5 py-4 text-sm text-slate-600">
-                                        {copy.accessionNumber}
-                                    </td>
+                                        const condition =
+                                            getCondition(
+                                                copy
+                                            );
 
-                                    <td className="px-5 py-4 text-sm text-slate-600">
-                                        {copy.shelf}
-                                    </td>
+                                        return (
+                                            <tr
+                                                key={
+                                                    copy.id
+                                                }
+                                                className="border-t border-slate-100 transition hover:bg-blue-50/40"
+                                            >
 
-                                    <td className="px-5 py-4">
-                                        <span
-                                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
-                                                copy.status
-                                            )}`}
-                                        >
-                                            {copy.status}
-                                        </span>
-                                    </td>
+                                                <td className="px-5 py-4">
 
-                                    <td className="px-5 py-4">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setEditingCopy({ ...copy })
-                                            }
-                                            className="flex items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
-                                        >
-                                            <FaEdit />
-                                            Edit
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                                    <div className="flex items-center gap-2 font-semibold text-slate-900">
+
+                                                        <FaBarcode className="text-slate-400" />
+
+                                                        {copy.barcode ||
+                                                            "—"}
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td className="px-5 py-4">
+
+                                                    <div className="flex items-center gap-3">
+
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                                                            <FaBook />
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="font-semibold text-slate-900">
+                                                                {getBookTitle(
+                                                                    copy
+                                                                )}
+                                                            </p>
+
+                                                            {copy.book_id && (
+                                                                <p className="mt-1 text-xs text-slate-400">
+                                                                    Book ID:{" "}
+                                                                    {
+                                                                        copy.book_id
+                                                                    }
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td className="px-5 py-4 text-sm text-slate-600">
+                                                    {copy.accession_number ||
+                                                        copy.accessionNumber ||
+                                                        "—"}
+                                                </td>
+
+                                                <td className="px-5 py-4 text-sm text-slate-600">
+                                                    {copy.shelf_location ||
+                                                        copy.shelfLocation ||
+                                                        "Not assigned"}
+                                                </td>
+
+                                                <td className="px-5 py-4">
+
+                                                    <span
+                                                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getConditionStyle(
+                                                            condition
+                                                        )}`}
+                                                    >
+                                                        {
+                                                            condition
+                                                        }
+                                                    </span>
+
+                                                </td>
+
+                                                <td className="px-5 py-4">
+
+                                                    <span
+                                                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusStyle(
+                                                            status
+                                                        )}`}
+                                                    >
+                                                        {
+                                                            status
+                                                        }
+                                                    </span>
+
+                                                </td>
+                                                <td className="px-5 py-4">
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setSelectedCopy(copy)
+                                                        }
+                                                        className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                                                    >
+                                                        <FaBarcode />
+                                                        View Barcode
+                                                    </button>
+
+                                                </td>
+
+                                            </tr>
+                                        );
+                                    }
+                                )}
+
                         </tbody>
+
                     </table>
+
                 </div>
+
+                {loading && (
+                    <div className="px-6 py-14 text-center text-sm text-slate-400">
+                        Loading book copies...
+                    </div>
+                )}
+
+                {!loading &&
+                    filteredCopies.length ===
+                    0 && (
+                        <div className="px-6 py-14 text-center">
+
+                            <FaCopy className="mx-auto text-3xl text-slate-300" />
+
+                            <h2 className="mt-4 font-semibold text-slate-800">
+                                No book copies found
+                            </h2>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                                Try changing the search keyword or status filter.
+                            </p>
+
+                        </div>
+                    )}
+
             </section>
+            {/* BARCODE MODAL */}
+            {selectedCopy && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
 
-            {filteredCopies.length === 0 && (
-                <div className="mt-6 rounded-2xl bg-white px-6 py-14 text-center shadow-sm ring-1 ring-slate-200">
-                    <FaCopy className="mx-auto text-3xl text-slate-300" />
+                    <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-                    <h2 className="mt-4 font-semibold text-slate-800">
-                        No book copies found
-                    </h2>
+                        {/* HEADER */}
+                        <div className="flex items-center justify-between bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
 
-                    <p className="mt-1 text-sm text-slate-500">
-                        Try changing the search keyword or status filter.
-                    </p>
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
+                                    Book Copy Barcode
+                                </p>
+
+                                <h2 className="mt-1 text-xl font-bold">
+                                    {getBookTitle(selectedCopy)}
+                                </h2>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setSelectedCopy(null)
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15"
+                            >
+                                <FaTimes />
+                            </button>
+
+                        </div>
+
+                        {/* BODY */}
+                        <div className="p-6">
+
+                            <div
+                                id="barcode-print-area"
+                                className="rounded-xl border border-slate-200 bg-white p-6 text-center"
+                            >
+
+                                <p className="mb-2 text-sm font-semibold text-slate-900">
+                                    {getBookTitle(selectedCopy)}
+                                </p>
+
+                                <p className="mb-5 text-xs text-slate-500">
+                                    Accession No:{" "}
+                                    {selectedCopy.accession_number ||
+                                        selectedCopy.accessionNumber ||
+                                        "—"}
+                                </p>
+
+                                <div className="overflow-x-auto">
+                                    <svg
+                                        ref={barcodeRef}
+                                        className="mx-auto"
+                                    />
+                                </div>
+
+                                <p className="mt-4 text-xs text-slate-400">
+                                    BCP Library Management System
+                                </p>
+
+                            </div>
+
+                            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-700">
+                                Print this barcode and attach it to the corresponding physical book copy.
+                                Staff can scan it during borrowing and return processing.
+                            </div>
+
+                            {/* ACTIONS */}
+                            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedCopy(null)
+                                    }
+                                    className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
+                                >
+                                    Close
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const printContent =
+                                            document.getElementById(
+                                                "barcode-print-area"
+                                            );
+
+                                        if (!printContent) {
+                                            return;
+                                        }
+
+                                        const printWindow =
+                                            window.open(
+                                                "",
+                                                "_blank",
+                                                "width=700,height=600"
+                                            );
+
+                                        if (!printWindow) {
+                                            return;
+                                        }
+
+                                        printWindow.document.write(`
+                                <!doctype html>
+                                <html>
+                                    <head>
+                                        <title>Print Barcode</title>
+
+                                        <style>
+                                            body {
+                                                font-family: Arial, sans-serif;
+                                                margin: 0;
+                                                padding: 30px;
+                                                text-align: center;
+                                            }
+
+                                            .barcode-label {
+                                                display: inline-block;
+                                                border: 1px solid #d1d5db;
+                                                border-radius: 12px;
+                                                padding: 24px;
+                                            }
+
+                                            svg {
+                                                max-width: 100%;
+                                            }
+
+                                            @media print {
+                                                body {
+                                                    padding: 0;
+                                                }
+                                            }
+                                        </style>
+                                    </head>
+
+                                    <body>
+
+                                        <div class="barcode-label">
+                                            ${printContent.innerHTML}
+                                        </div>
+
+                                        <script>
+                                            window.onload = function () {
+                                                window.print();
+                                                window.close();
+                                            };
+                                        </script>
+
+                                    </body>
+                                </html>
+                            `);
+
+                                        printWindow.document.close();
+                                    }}
+                                    className="rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
+                                >
+                                    Print Barcode
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
             )}
 
-            {/* Add Modal */}
+            {/* ADD COPY MODAL */}
             {showAddModal && (
-                <CopyModal
-                    title="Add Book Copy"
-                    data={newCopy}
-                    setData={setNewCopy}
-                    onCancel={() => setShowAddModal(false)}
-                    onSave={handleAddCopy}
-                    saveLabel="Save Copy"
-                />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+
+                    <form
+                        onSubmit={
+                            handleAddCopy
+                        }
+                        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+                    >
+
+                        {/* HEADER */}
+                        <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
+                                    Library Inventory
+                                </p>
+
+                                <h2 className="mt-1 text-xl font-bold">
+                                    Add Book Copy
+                                </h2>
+                            </div>
+
+                            <button
+                                type="button"
+                                disabled={
+                                    saving
+                                }
+                                onClick={
+                                    closeModal
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15 disabled:opacity-50"
+                            >
+                                <FaTimes />
+                            </button>
+
+                        </div>
+
+                        <div className="overflow-y-auto p-6">
+
+                            <div className="grid gap-5 md:grid-cols-2">
+
+                                {/* BOOK */}
+                                <div className="md:col-span-2">
+
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Book *
+                                    </label>
+
+                                    <select
+                                        value={
+                                            newCopy.bookId
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewCopy({
+                                                ...newCopy,
+                                                bookId:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        required
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        <option value="">
+                                            Select book
+                                        </option>
+
+                                        {books
+                                            .filter(
+                                                (
+                                                    book
+                                                ) =>
+                                                    book.is_active !==
+                                                    false
+                                            )
+                                            .map(
+                                                (
+                                                    book
+                                                ) => (
+                                                    <option
+                                                        key={
+                                                            book.id
+                                                        }
+                                                        value={
+                                                            book.id
+                                                        }
+                                                    >
+                                                        {
+                                                            book.title
+                                                        }
+                                                        {book.isbn
+                                                            ? ` — ${book.isbn}`
+                                                            : ""}
+                                                    </option>
+                                                )
+                                            )}
+                                    </select>
+
+                                </div>
+
+                                <CopyField
+                                    label="Accession Number *"
+                                    value={
+                                        newCopy.accessionNumber
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewCopy({
+                                            ...newCopy,
+                                            accessionNumber:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="e.g. ACC-0001"
+                                />
+
+                                <CopyField
+                                    label="Barcode *"
+                                    value={
+                                        newCopy.barcode
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewCopy({
+                                            ...newCopy,
+                                            barcode:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="e.g. BCP-BOOK-0001"
+                                />
+
+                                <CopyField
+                                    label="Shelf Location"
+                                    value={
+                                        newCopy.shelfLocation
+                                    }
+                                    onChange={(
+                                        value
+                                    ) =>
+                                        setNewCopy({
+                                            ...newCopy,
+                                            shelfLocation:
+                                                value,
+                                        })
+                                    }
+                                    placeholder="e.g. Shelf A-01"
+                                />
+
+                                {/* CONDITION */}
+                                <div>
+
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Condition
+                                    </label>
+
+                                    <select
+                                        value={
+                                            newCopy.condition
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewCopy({
+                                                ...newCopy,
+                                                condition:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        <option value="excellent">
+                                            Excellent
+                                        </option>
+
+                                        <option value="good">
+                                            Good
+                                        </option>
+
+                                        <option value="fair">
+                                            Fair
+                                        </option>
+
+                                        <option value="poor">
+                                            Poor
+                                        </option>
+
+                                        <option value="damaged">
+                                            Damaged
+                                        </option>
+                                    </select>
+
+                                </div>
+
+                                {/* ACQUIRED DATE */}
+                                <div className="md:col-span-2">
+
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Acquired Date
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={
+                                            newCopy.acquiredAt
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setNewCopy({
+                                                ...newCopy,
+                                                acquiredAt:
+                                                    event
+                                                        .target
+                                                        .value,
+                                            })
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                                    />
+
+                                </div>
+
+                            </div>
+
+                            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-700">
+                                Status is managed automatically by the circulation process.
+                                A new usable copy starts as available and changes when it is borrowed,
+                                returned, overdue, damaged, or lost.
+                            </div>
+
+                        </div>
+
+                        {/* ACTIONS */}
+                        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-white px-6 py-5">
+
+                            <button
+                                type="button"
+                                disabled={
+                                    saving
+                                }
+                                onClick={
+                                    closeModal
+                                }
+                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    saving
+                                }
+                                className="rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {saving
+                                    ? "Saving..."
+                                    : "Save Copy"}
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
             )}
 
-            {/* Edit Modal */}
-            {editingCopy && (
-                <CopyModal
-                    title="Edit Book Copy"
-                    data={editingCopy}
-                    setData={setEditingCopy}
-                    onCancel={() => setEditingCopy(null)}
-                    onSave={handleUpdateCopy}
-                    saveLabel="Update Copy"
-                />
-            )}
         </AdminLayout>
     );
 }
 
-function CopyModal({
-    title,
-    data,
-    setData,
-    onCancel,
-    onSave,
-    saveLabel,
+function CopyField({
+    label,
+    value,
+    onChange,
+    placeholder = "",
 }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-                <div className="flex items-center justify-between bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
-                    <h2 className="text-xl font-bold">
-                        {title}
-                    </h2>
-
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                <div className="grid gap-5 p-6 md:grid-cols-2">
-                    <CopyField
-                        label="Barcode"
-                        value={data.barcode}
-                        onChange={(value) =>
-                            setData({ ...data, barcode: value })
-                        }
-                    />
-
-                    <CopyField
-                        label="Accession Number"
-                        value={data.accessionNumber}
-                        onChange={(value) =>
-                            setData({
-                                ...data,
-                                accessionNumber: value,
-                            })
-                        }
-                    />
-
-                    <CopyField
-                        label="Book Title"
-                        value={data.bookTitle}
-                        onChange={(value) =>
-                            setData({ ...data, bookTitle: value })
-                        }
-                    />
-
-                    <CopyField
-                        label="Shelf Location"
-                        value={data.shelf}
-                        onChange={(value) =>
-                            setData({ ...data, shelf: value })
-                        }
-                    />
-
-                    <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                            Status
-                        </label>
-
-                        <select
-                            value={data.status}
-                            onChange={(e) =>
-                                setData({
-                                    ...data,
-                                    status: e.target.value,
-                                })
-                            }
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-                        >
-                            <option value="Available">Available</option>
-                            <option value="Borrowed">Borrowed</option>
-                            <option value="Reserved">Reserved</option>
-                            <option value="Lost">Lost</option>
-                            <option value="Damaged">Damaged</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-5">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={onSave}
-                        className="rounded-xl bg-[#0F4C97] px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
-                    >
-                        {saveLabel}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function CopyField({ label, value, onChange }) {
     return (
         <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -425,8 +1200,13 @@ function CopyField({ label, value, onChange }) {
             <input
                 type="text"
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                placeholder={placeholder}
+                onChange={(event) =>
+                    onChange(
+                        event.target.value
+                    )
+                }
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
             />
         </div>
     );

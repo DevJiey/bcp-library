@@ -5,14 +5,12 @@ import Login from "../pages/auth/Login";
 import BorrowerDashboard from "../pages/borrower/Dashboard";
 import Books from "../pages/borrower/Books";
 import Borrowings from "../pages/borrower/Borrowings";
-import Fines from "../pages/borrower/Fines";
 import Notifications from "../pages/borrower/Notifications";
 import Profile from "../pages/borrower/Profile";
 import StaffDashboard from "../pages/staff/Dashboard";
 import BorrowRequests from "../pages/staff/BorrowRequests";
 import Returns from "../pages/staff/Returns";
 import Borrowers from "../pages/staff/Borrowers";
-import FineCollection from "../pages/staff/FineCollection";
 import AdminDashboard from "../pages/admin/Dashboard";
 import AdminBooks from "../pages/admin/Books";
 import BookCopies from "../pages/admin/BookCopies";
@@ -20,6 +18,7 @@ import Categories from "../pages/admin/Categories";
 import Authors from "../pages/admin/Authors";
 import Publishers from "../pages/admin/Publishers";
 import Staff from "../pages/admin/Staff";
+import Announcements from "../pages/admin/Announcements";
 import Settings from "../pages/admin/Settings";
 import Reports from "../pages/admin/Reports";
 import Logs from "../pages/admin/Logs";
@@ -55,14 +54,6 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute allowedRole="borrower">
                         <Borrowings />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/borrower/fines"
-                element={
-                    <ProtectedRoute allowedRole="borrower">
-                        <Fines />
                     </ProtectedRoute>
                 }
             />
@@ -115,15 +106,6 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute allowedRole="staff">
                         <Borrowers />
-                    </ProtectedRoute>
-                }
-            />
-
-            <Route
-                path="/staff/fines"
-                element={
-                    <ProtectedRoute allowedRole="staff">
-                        <FineCollection />
                     </ProtectedRoute>
                 }
             />
@@ -187,6 +169,15 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute allowedRole="admin">
                         <Staff />
+                    </ProtectedRoute>
+                }
+            />
+            
+            <Route
+                path="/admin/announcements"
+                element={
+                    <ProtectedRoute allowedRole="admin">
+                        <Announcements />
                     </ProtectedRoute>
                 }
             />
