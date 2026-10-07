@@ -10,6 +10,11 @@ function ProtectedRoute({
     const userRole =
         localStorage.getItem("userRole");
 
+    const storedUser =
+        localStorage.getItem(
+            "currentUser"
+        );
+
     // Walang login/token
     if (!token) {
         return (
@@ -20,9 +25,18 @@ function ProtectedRoute({
         );
     }
 
-    // May token pero walang stored role
-    if (!userRole) {
-        localStorage.removeItem("token");
+    // May token pero incomplete
+    // ang stored authentication data
+    if (
+        !userRole ||
+        !storedUser
+    ) {
+        localStorage.removeItem(
+            "token"
+        );
+        localStorage.removeItem(
+            "userRole"
+        );
         localStorage.removeItem(
             "currentUser"
         );
@@ -30,6 +44,43 @@ function ProtectedRoute({
         return (
             <Navigate
                 to="/"
+                replace
+            />
+        );
+    }
+
+    let currentUser;
+
+    try {
+        currentUser =
+            JSON.parse(storedUser);
+    } catch {
+        localStorage.removeItem(
+            "token"
+        );
+        localStorage.removeItem(
+            "userRole"
+        );
+        localStorage.removeItem(
+            "currentUser"
+        );
+
+        return (
+            <Navigate
+                to="/"
+                replace
+            />
+        );
+    }
+
+    // First-login users must change
+    // their temporary password first.
+    if (
+        currentUser.isFirstLogin
+    ) {
+        return (
+            <Navigate
+                to="/change-password"
                 replace
             />
         );

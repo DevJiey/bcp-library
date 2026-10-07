@@ -1,16 +1,19 @@
 import { Routes, Route } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
+import ChangePassword from "../pages/auth/ChangePassword";
 
 import BorrowerDashboard from "../pages/borrower/Dashboard";
 import Books from "../pages/borrower/Books";
 import Borrowings from "../pages/borrower/Borrowings";
 import Notifications from "../pages/borrower/Notifications";
 import Profile from "../pages/borrower/Profile";
+
 import StaffDashboard from "../pages/staff/Dashboard";
 import BorrowRequests from "../pages/staff/BorrowRequests";
 import Returns from "../pages/staff/Returns";
 import Borrowers from "../pages/staff/Borrowers";
+
 import AdminDashboard from "../pages/admin/Dashboard";
 import AdminBooks from "../pages/admin/Books";
 import BookCopies from "../pages/admin/BookCopies";
@@ -23,6 +26,7 @@ import Settings from "../pages/admin/Settings";
 import Reports from "../pages/admin/Reports";
 import Logs from "../pages/admin/Logs";
 import Backup from "../pages/admin/Backup";
+
 import NotFound from "../pages/NotFound";
 import AccessDenied from "../pages/AccessDenied";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -30,7 +34,15 @@ import ProtectedRoute from "../components/ProtectedRoute";
 function AppRoutes() {
     return (
         <Routes>
-            <Route path="/" element={<Login />} />
+            <Route
+                path="/"
+                element={<Login />}
+            />
+
+            <Route
+                path="/change-password"
+                element={<ChangePassword />}
+            />
 
             <Route
                 path="/borrower/dashboard"
@@ -49,6 +61,7 @@ function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
+
             <Route
                 path="/borrower/borrowings"
                 element={
@@ -57,6 +70,7 @@ function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
+
             <Route
                 path="/borrower/notifications"
                 element={
@@ -65,6 +79,7 @@ function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
+
             <Route
                 path="/borrower/profile"
                 element={
@@ -172,7 +187,7 @@ function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
-            
+
             <Route
                 path="/admin/announcements"
                 element={
@@ -223,10 +238,11 @@ function AppRoutes() {
                 element={<AccessDenied />}
             />
 
-            <Route path="*" element={<NotFound />} />
-
+            <Route
+                path="*"
+                element={<NotFound />}
+            />
         </Routes>
-
     );
 }
 

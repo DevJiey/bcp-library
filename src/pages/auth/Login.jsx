@@ -4,6 +4,8 @@ import {
     FaUser,
     FaLock,
     FaSpinner,
+    FaEye,
+    FaEyeSlash,
 } from "react-icons/fa";
 
 import logo from "../../assets/bcp-logo.png";
@@ -16,6 +18,9 @@ function Login() {
         useState("");
     const [password, setPassword] =
         useState("");
+
+    const [showPassword, setShowPassword] =
+        useState(false);
 
     const [loading, setLoading] =
         useState(false);
@@ -71,6 +76,21 @@ function Login() {
                 "currentUser",
                 JSON.stringify(user)
             );
+
+            /*
+             * First-login users must change
+             * their temporary password before
+             * continuing to the dashboard.
+             */
+            if (user.isFirstLogin) {
+                navigate(
+                    "/change-password",
+                    {
+                        replace: true,
+                    }
+                );
+                return;
+            }
 
             if (
                 user.role === "admin"
@@ -224,7 +244,11 @@ function Login() {
                                 <FaLock className="text-gray-400" />
 
                                 <input
-                                    type="password"
+                                    type={
+                                        showPassword
+                                            ? "text"
+                                            : "password"
+                                    }
                                     value={password}
                                     onChange={(event) => {
                                         setPassword(
@@ -237,6 +261,26 @@ function Login() {
                                     disabled={loading}
                                     className="w-full p-3 outline-none disabled:bg-transparent"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPassword(
+                                            (current) => !current
+                                        )
+                                    }
+                                    className="p-2 text-gray-400 hover:text-blue-700 transition"
+                                    aria-label={
+                                        showPassword
+                                            ? "Hide password"
+                                            : "Show password"
+                                    }
+                                >
+                                    {showPassword ? (
+                                        <FaEyeSlash />
+                                    ) : (
+                                        <FaEye />
+                                    )}
+                                </button>
 
                             </div>
                         </div>
