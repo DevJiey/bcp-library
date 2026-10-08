@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   FaRobot,
   FaTimes,
@@ -13,12 +14,23 @@ function AIAssistant() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const messagesEndRef = useRef(null);
+
   const [messages, setMessages] = useState([
     {
       role: "assistant",
       text: "Hello! I'm your BCP Library AI Assistant. Ask me about books and library services.",
     },
   ]);
+
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+  }, [messages, loading, isOpen]);
 
   const sendMessage = async (event) => {
     event.preventDefault();
@@ -79,6 +91,7 @@ function AIAssistant() {
           <header className="flex items-center justify-between bg-[#08233f] px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <FaRobot />
+
               <div>
                 <h2 className="text-sm font-bold">
                   BCP Library AI
@@ -114,13 +127,29 @@ function AIAssistant() {
                 }`}
               >
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
+                  className={`max-w-[85%] break-words rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                     item.role === "user"
-                      ? "bg-blue-700 text-white"
+                      ? "whitespace-pre-wrap bg-blue-700 text-white"
                       : "border border-slate-200 bg-white text-slate-800"
                   }`}
                 >
-                  {item.text}
+                  {item.role === "assistant" ? (
+                    <div className="space-y-2 [&_p]:my-1 [&_strong]:font-bold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-blue-700 [&_a]:underline">
+                      <ReactMarkdown
+                        components={{
+                          a: ({ children }) => (
+                            <span className="font-medium text-blue-700">
+                              {children}
+                            </span>
+                          ),
+                        }}
+                      >
+                        {item.text}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    item.text
+                  )}
                 </div>
               </div>
             ))}
@@ -130,6 +159,8 @@ function AIAssistant() {
                 AI is thinking...
               </p>
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           <form
