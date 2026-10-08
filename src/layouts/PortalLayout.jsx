@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import AIAssistant from "../components/AIAssistant";
 
 function PortalLayout({
   children,
@@ -42,6 +44,9 @@ function PortalLayout({
           {children}
         </main>
       </div>
+
+      {/* Floating AI Assistant */}
+      <AIAssistant />
     </div>
   );
 }
