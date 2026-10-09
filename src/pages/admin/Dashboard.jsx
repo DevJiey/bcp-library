@@ -443,8 +443,8 @@ function AdminDashboard() {
       {/* HEADER */}
       <div className="mb-5 sm:mb-8">
 
-        <p className="text-sm font-semibold text-blue-700">
-          System Administration
+        <p className="text-xs font-bold uppercase tracking-wider text-[#0F4C97]">
+          SYSTEM DASHBOARD
         </p>
 
         <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
@@ -456,12 +456,6 @@ function AdminDashboard() {
                 "Administrator"}
               !
             </h1>
-
-            {adminName && (
-              <p className="mt-1 text-sm text-slate-500">
-                {adminName}
-              </p>
-            )}
           </div>
 
           <p className="text-sm text-slate-500">

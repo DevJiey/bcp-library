@@ -62,7 +62,7 @@ export default function StaffDashboard() {
     <StaffLayout>
       <div className="mx-auto max-w-7xl space-y-5 pb-24 lg:space-y-7 lg:pb-8">
         <header>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#0F4C97]">Staff Portal</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#0F4C97]">Staff Dashboard</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Welcome back, {currentUser?.firstName || "Librarian"}!</h1>
           <p className="mt-1 text-sm text-slate-500">Library operations overview</p>
         </header>

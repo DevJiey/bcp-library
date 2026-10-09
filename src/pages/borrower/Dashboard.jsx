@@ -68,7 +68,6 @@ export default function BorrowerDashboard() {
         <div className="mb-5 sm:mb-7">
           <p className="text-xs font-bold uppercase tracking-wider text-[#0F4C97]">Borrower Dashboard</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Welcome back, {currentUser?.firstName || "Borrower"}!</h1>
-          <p className="mt-1 text-sm text-slate-500">Discover books and manage your borrowings.</p>
         </div>
 
         {error && <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{error}</div>}
