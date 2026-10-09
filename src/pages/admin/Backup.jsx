@@ -381,13 +381,13 @@ function Backup() {
     return (
         <AdminLayout>
             {/* HEADER */}
-            <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="mb-5 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="text-sm font-semibold text-blue-700">
                         Database Maintenance
                     </p>
 
-                    <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+                    <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-3xl">
                         Backup & Restore
                     </h1>
 
@@ -431,7 +431,7 @@ function Backup() {
             {isProduction ? (
                 <>
                     {/* PRODUCTION RECOVERY */}
-                    <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <section className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:mb-6 sm:p-5">
                         <div className="flex gap-4">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                                 <FaCloud />
@@ -454,7 +454,7 @@ function Backup() {
                     </section>
 
                     <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                        <div className="px-6 py-10 text-center">
+                        <div className="px-4 py-8 text-center sm:px-6 sm:py-10">
                             <FaCloud className="mx-auto text-4xl text-blue-300" />
 
                             <h2 className="mt-4 text-lg font-bold text-slate-900">
@@ -475,7 +475,7 @@ function Backup() {
             ) : (
                 <>
                     {/* WARNING */}
-                    <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                    <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:mb-6 sm:p-5">
                         <div className="flex gap-4">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                                 <FaExclamationTriangle />
@@ -498,7 +498,7 @@ function Backup() {
 
                     {/* BACKUP LIST */}
                     <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-                        <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-4 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
                             <div className="flex items-center gap-4">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                                     <FaHistory />
@@ -544,7 +544,35 @@ function Backup() {
                             </button>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        {/* Mobile backup cards: preserve desktop table below */}
+                        <div className="space-y-3 p-4 lg:hidden">
+                            {!loading && backups.map((backup, index) => {
+                                const fileName = backup.fileName || backup.file_name || backup.name || `Backup ${index + 1}`;
+                                const createdAt = backup.createdAt || backup.created_at || backup.modifiedAt || backup.modified_at;
+                                const fileSize = backup.size || backup.fileSize || backup.file_size;
+                                return (
+                                    <article key={`${fileName}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><FaDatabase /></span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="break-all text-sm font-bold text-slate-900">{fileName}</p>
+                                                <p className="mt-1 text-xs text-slate-500">PostgreSQL backup</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
+                                            <div><p className="text-[11px] text-slate-500">Created</p><p className="mt-1 text-xs font-semibold text-slate-700">{formatDate(createdAt)}</p></div>
+                                            <div><p className="text-[11px] text-slate-500">File size</p><p className="mt-1 text-xs font-semibold text-slate-700">{formatFileSize(fileSize)}</p></div>
+                                        </div>
+                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                            <button type="button" disabled={downloadingFile === fileName} onClick={() => handleDownload(backup)} className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 px-3 py-3 text-sm font-semibold text-blue-800 disabled:opacity-50"><FaCloudDownloadAlt />{downloadingFile === fileName ? "Downloading..." : "Download"}</button>
+                                            <button type="button" disabled={restoringFile !== null} onClick={() => handleRestore(backup)} className="flex items-center justify-center gap-2 rounded-xl border border-amber-200 px-3 py-3 text-sm font-semibold text-amber-800 disabled:opacity-50"><FaUndoAlt />{restoringFile === fileName ? "Restoring..." : "Restore"}</button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+
+                        <div className="hidden overflow-x-auto lg:block">
                             <table className="w-full min-w-[900px]">
                                 <thead className="bg-slate-50">
                                     <tr>

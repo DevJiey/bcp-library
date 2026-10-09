@@ -257,19 +257,14 @@ function Notifications() {
 
   return (
     <BorrowerLayout>
-      {/* PAGE HEADER */}
-      <div className="mb-5 sm:mb-8">
-        <p className="text-sm font-semibold text-blue-700">
-          Library Updates
-        </p>
-
-        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
-          Notifications
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-500">
-          Stay updated with library announcements and borrowing alerts.
-        </p>
+      {/* Compact mobile header; desktop heading preserved */}
+      <div className="mb-4 sm:mb-7">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#0F4C97] sm:text-sm sm:normal-case sm:tracking-normal">Library Updates</p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-extrabold text-slate-900 sm:text-3xl">Notifications</h1>
+          <button type="button" onClick={loadNotifications} disabled={loading} className="rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-[#0F4C97] shadow-sm hover:bg-blue-50 disabled:opacity-50 sm:hidden">Refresh</button>
+        </div>
+        <p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-sm">Announcements and important borrowing alerts.</p>
       </div>
 
       {error && (
@@ -279,9 +274,9 @@ function Notifications() {
       )}
 
       {/* NOTIFICATION CONTAINER */}
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <section className="overflow-hidden rounded-2xl bg-transparent shadow-none ring-0 sm:bg-white sm:shadow-sm sm:ring-1 sm:ring-slate-200">
 
-        <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3 shadow-sm sm:rounded-none sm:border-x-0 sm:border-t-0 sm:px-6 sm:py-5">
 
           <div className="flex items-center gap-3">
 
@@ -296,11 +291,11 @@ function Notifications() {
             </div>
 
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
+              <h2 className="text-sm font-bold text-slate-900 sm:text-lg">
                 Recent Notifications
               </h2>
 
-              <p className="text-sm text-slate-500">
+              <p className="text-xs text-slate-500 sm:text-sm">
                 {
                   notifications.length
                 }{" "}
@@ -326,7 +321,7 @@ function Notifications() {
               onClick={
                 markAllAsRead
               }
-              className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="shrink-0 rounded-xl border border-blue-200 px-2.5 py-2 text-[11px] font-semibold text-[#0F4C97] transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-sm"
             >
               {markingAll
                 ? "Marking..."
@@ -341,7 +336,7 @@ function Notifications() {
             Loading notifications...
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="mt-3 space-y-3 sm:mt-0 sm:divide-y sm:divide-slate-100 sm:space-y-0">
 
             {notifications.map(
               (item) => {
@@ -358,7 +353,7 @@ function Notifications() {
                         item
                       )
                     }
-                    className={`flex cursor-pointer flex-col gap-4 px-6 py-5 transition sm:flex-row sm:items-start ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-100 px-3 py-4 shadow-sm transition sm:rounded-none sm:border-0 sm:px-6 sm:py-5 ${
                       item.is_read
                         ? "bg-white hover:bg-slate-50"
                         : "bg-blue-50/40 hover:bg-blue-50"
@@ -366,23 +361,23 @@ function Notifications() {
                   >
 
                     <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${style.iconStyle}`}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${style.iconStyle}`}
                     >
                       {style.icon}
                     </div>
 
                     <div className="min-w-0 flex-1">
 
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
 
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
-                          <h3 className="font-bold text-slate-900">
+                          <h3 className="text-sm font-bold text-slate-900 sm:text-base">
                             {item.title}
                           </h3>
 
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${style.labelStyle}`}
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${style.labelStyle}`}
                           >
                             {
                               style.label
@@ -403,13 +398,13 @@ function Notifications() {
 
                       </div>
 
-                      <p className="mt-2 leading-6 text-slate-600">
+                      <p className="mt-2 break-words text-sm leading-6 text-slate-600">
                         {item.message}
                       </p>
 
                       {!item.is_read && (
                         <p className="mt-2 text-xs font-semibold text-blue-600">
-                          Click to mark as read
+                          Tap to mark as read
                         </p>
                       )}
 
@@ -426,7 +421,7 @@ function Notifications() {
         {!loading &&
           notifications.length ===
             0 && (
-            <div className="px-6 py-16 text-center">
+            <div className="mt-3 rounded-2xl bg-white px-6 py-16 text-center sm:mt-0">
 
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                 <FaBell />

@@ -8,6 +8,7 @@ import {
   FaUserEdit,
   FaPlus,
   FaSearch,
+  FaFilter,
   FaEdit,
   FaTimes,
 } from "react-icons/fa";
@@ -24,6 +25,9 @@ function Authors() {
 
   const [search, setSearch] =
     useState("");
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -97,19 +101,16 @@ function Authors() {
           .trim()
           .toLowerCase();
 
-      if (!keyword) {
-        return authors;
-      }
-
-      return authors.filter(
-        (author) =>
-          getFullName(author)
-            .toLowerCase()
-            .includes(keyword)
-      );
+      return authors.filter((author) => {
+        const matchesSearch = !keyword || getFullName(author).toLowerCase().includes(keyword);
+        const active = author.is_active !== false;
+        const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? active : !active);
+        return matchesSearch && matchesStatus;
+      });
     }, [
       authors,
       search,
+      statusFilter,
     ]);
 
   const resetForm = () => {
@@ -320,7 +321,7 @@ function Authors() {
           onClick={
             openAddModal
           }
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
+          className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
         >
           <FaPlus />
           Add Author
@@ -334,8 +335,62 @@ function Authors() {
         </div>
       )}
 
+      {/* MOBILE SEARCH AND STATUS FILTER */}
+      <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:hidden">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Author Records</h2>
+            <p className="text-xs text-slate-500">{loading ? "Loading..." : `${filteredAuthors.length} author${filteredAuthors.length === 1 ? "" : "s"} found`}</p>
+          </div>
+          <span className="rounded-xl bg-blue-50 p-2.5 text-blue-700"><FaUserEdit /></span>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-300 px-3 focus-within:border-blue-600">
+            <FaSearch className="shrink-0 text-slate-400" />
+            <input type="search" aria-label="Search authors" placeholder="Search authors..." value={search} onChange={(e) => setSearch(e.target.value)} className="min-w-0 w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
+          </label>
+          <button type="button" aria-label="Filter authors" aria-expanded={mobileFilterOpen} onClick={() => setMobileFilterOpen((open) => !open)} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${statusFilter !== "all" ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-300 bg-white text-blue-700"}`}><FaFilter /></button>
+        </div>
+        {mobileFilterOpen && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <label htmlFor="author-mobile-status" className="mb-1 block text-xs font-semibold text-slate-600">Status</label>
+            <select id="author-mobile-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-600">
+              <option value="all">All authors</option><option value="active">Active</option><option value="inactive">Inactive</option>
+            </select>
+          </div>
+        )}
+      </section>
+
+      {/* MOBILE AUTHOR CARDS */}
+      <section className="space-y-3 lg:hidden" aria-label="Author list">
+        {loading ? (
+          <div className="rounded-2xl bg-white px-5 py-10 text-center text-sm text-slate-500">Loading authors...</div>
+        ) : filteredAuthors.length === 0 ? (
+          <div className="rounded-2xl bg-white px-5 py-10 text-center text-sm text-slate-500">No authors found. Try another search or filter.</div>
+        ) : filteredAuthors.map((author) => {
+          const first = author.first_name ?? author.firstName ?? "";
+          const last = author.last_name ?? author.lastName ?? "";
+          const initials = [first, last].filter(Boolean).map((part) => part[0]).join("").toUpperCase();
+          const active = author.is_active !== false;
+          return (
+            <article key={author.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-800">{initials || <FaUserEdit />}</div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-sm font-bold text-slate-900">{getFullName(author) || "Unnamed author"}</h3>
+                  <p className="mt-1 text-xs text-slate-500">Catalog author</p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{active ? "Active" : "Inactive"}</span>
+              </div>
+              <button type="button" onClick={() => openEditModal(author)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700"><FaEdit /> Edit Author</button>
+            </article>
+          );
+        })}
+      </section>
+      <button type="button" onClick={openAddModal} aria-label="Add author" className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg lg:hidden"><FaPlus /></button>
+
       {/* TOOLBAR */}
-      <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="mb-6 hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -392,7 +447,7 @@ function Authors() {
       </section>
 
       {/* TABLE */}
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <section className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="overflow-x-auto">
 

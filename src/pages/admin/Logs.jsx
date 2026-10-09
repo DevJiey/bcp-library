@@ -7,6 +7,7 @@ import {
 import {
   FaClipboardList,
   FaSearch,
+  FaFilter,
   FaUserShield,
   FaUserTie,
   FaBook,
@@ -30,6 +31,8 @@ function Logs() {
 
   const [moduleFilter, setModuleFilter] =
     useState("All");
+
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -376,7 +379,7 @@ function Logs() {
             disabled={
               loading
             }
-            className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+            className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
           >
             <FaSyncAlt
               className={
@@ -399,8 +402,47 @@ function Logs() {
         </div>
       )}
 
+      {/* MOBILE TOOLBAR: compact search + filter */}
+      <section className="mb-4 lg:hidden">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-slate-900">Activity Records</h2>
+            <p className="text-xs text-slate-500">{loading ? "Loading..." : `${filteredLogs.length} logs found`}</p>
+          </div>
+          <button type="button" onClick={loadLogs} disabled={loading}
+            aria-label="Refresh logs"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-blue-800 disabled:opacity-50">
+            <FaSyncAlt className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+            <FaSearch className="shrink-0 text-slate-400" />
+            <input type="search" aria-label="Search system logs" placeholder="Search logs..."
+              value={search} onChange={(event) => setSearch(event.target.value)}
+              className="h-11 min-w-0 w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
+          </label>
+          <button type="button" aria-label="Filter logs by module"
+            aria-expanded={mobileFilterOpen}
+            onClick={() => setMobileFilterOpen((open) => !open)}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${mobileFilterOpen || moduleFilter !== "All" ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-blue-800"}`}>
+            <FaFilter />
+          </button>
+        </div>
+        {mobileFilterOpen && (
+          <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <label htmlFor="mobile-log-module" className="mb-2 block text-xs font-semibold text-slate-600">Filter by module</label>
+            <select id="mobile-log-module" value={moduleFilter}
+              onChange={(event) => setModuleFilter(event.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-600">
+              {modules.map((module) => <option key={module} value={module}>{module === "All" ? "All Modules" : module}</option>)}
+            </select>
+          </div>
+        )}
+      </section>
+
       {/* TOOLBAR */}
-      <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="mb-6 hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -494,7 +536,7 @@ function Logs() {
       </section>
 
       {/* LOGS */}
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
+      <section className="rounded-2xl bg-transparent shadow-none lg:bg-white lg:p-6 lg:shadow-sm lg:ring-1 lg:ring-slate-200">
 
         {loading ? (
           <div className="px-6 py-14 text-center text-sm text-slate-400">
@@ -520,7 +562,7 @@ function Logs() {
                     key={
                       log.id
                     }
-                    className="flex flex-col gap-4 rounded-xl border border-slate-100 p-5 transition hover:border-blue-200 hover:bg-blue-50/30 sm:flex-row"
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/30 lg:flex-row lg:gap-4 lg:rounded-xl lg:p-5 lg:shadow-none"
                   >
 
                     <div

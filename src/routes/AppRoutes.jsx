@@ -11,8 +11,10 @@ import Notifications from "../pages/borrower/Notifications";
 import Profile from "../pages/borrower/Profile";
 
 import StaffDashboard from "../pages/staff/Dashboard";
+import StaffBooks from "../pages/staff/Books";
 import BorrowRequests from "../pages/staff/BorrowRequests";
 import Returns from "../pages/staff/Returns";
+import StaffNotifications from "../pages/staff/Notifications";
 import Borrowers from "../pages/staff/Borrowers";
 
 import AdminDashboard from "../pages/admin/Dashboard";
@@ -97,6 +99,15 @@ function AppRoutes() {
             />
 
             <Route
+                path="/staff/notifications"
+                element={
+                    <ProtectedRoute allowedRole="staff">
+                        <StaffNotifications />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
                 path="/staff/dashboard"
                 element={
                     <ProtectedRoute allowedRole="staff">
@@ -104,6 +115,8 @@ function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
+
+            <Route path="/staff/books" element={<ProtectedRoute allowedRole="staff"><StaffBooks /></ProtectedRoute>} />
 
             <Route
                 path="/staff/requests"

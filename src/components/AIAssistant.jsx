@@ -82,7 +82,13 @@ function AIAssistant() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[60]">
+    <div
+      className="
+    fixed right-4 z-[60]
+    bottom-[calc(11rem+env(safe-area-inset-bottom))]
+    lg:bottom-5 lg:right-5
+  "
+    >
       {isOpen && (
         <section
           aria-label="BCP Library AI Assistant"
@@ -120,18 +126,16 @@ function AIAssistant() {
             {messages.map((item, index) => (
               <div
                 key={index}
-                className={`flex ${
-                  item.role === "user"
+                className={`flex ${item.role === "user"
                     ? "justify-end"
                     : "justify-start"
-                }`}
+                  }`}
               >
                 <div
-                  className={`max-w-[85%] break-words rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                    item.role === "user"
+                  className={`max-w-[85%] break-words rounded-2xl px-3 py-2 text-sm leading-relaxed ${item.role === "user"
                       ? "whitespace-pre-wrap bg-blue-700 text-white"
                       : "border border-slate-200 bg-white text-slate-800"
-                  }`}
+                    }`}
                 >
                   {item.role === "assistant" ? (
                     <div className="space-y-2 [&_p]:my-1 [&_strong]:font-bold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-blue-700 [&_a]:underline">

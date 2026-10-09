@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BCP Library</string>
+    <string name="title_activity_main">BCP Library</string>
+    <string name="package_name">com.bcp.library</string>
+    <string name="custom_url_scheme">com.bcp.library</string>
+</resources>

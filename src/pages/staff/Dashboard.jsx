@@ -1,516 +1,104 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import {
-  FaClipboardCheck,
-  FaBookOpen,
-  FaUsers,
-  FaCheckCircle,
-  FaArrowRight,
-  FaBullhorn,
-} from "react-icons/fa";
-
+import { FaBookOpen, FaClipboardCheck, FaClock, FaExclamationTriangle, FaArrowRight, FaCalendarAlt, FaHistory } from "react-icons/fa";
 import StaffLayout from "../../layouts/StaffLayout";
 import apiRequest from "../../services/api";
 
-function StaffDashboard() {
+const asArray = (response) => Array.isArray(response?.data) ? response.data : [];
+const lower = (value) => String(value ?? "").toLowerCase();
+const dateText = (value) => {
+  if (!value) return "Date unavailable";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+};
+
+export default function StaffDashboard() {
   const navigate = useNavigate();
-
-  const [pendingRequests, setPendingRequests] =
-    useState([]);
-
-  const [borrowers, setBorrowers] =
-    useState([]);
-
-  const [bookCopies, setBookCopies] =
-    useState([]);
-
-  const [announcements, setAnnouncements] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
+  const [requests, setRequests] = useState([]);
+  const [copies, setCopies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const currentUser = useMemo(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem(
-          "currentUser"
-        ) || "{}"
-      );
-    } catch {
-      return {};
-    }
+    try { return JSON.parse(localStorage.getItem("currentUser") || "{}"); }
+    catch { return {}; }
   }, []);
 
   useEffect(() => {
-    const loadDashboard = async () => {
+    let active = true;
+    async function load() {
       try {
-        setLoading(true);
-        setError("");
-
-        const [
-          requestsResponse,
-          borrowersResponse,
-          copiesResponse,
-          announcementsResponse,
-        ] = await Promise.all([
-          apiRequest(
-            "/staff/borrow-requests"
-          ),
-
-          apiRequest(
-            "/users"
-          ),
-
-          apiRequest(
-            "/book-copies"
-          ),
-
-          apiRequest(
-            "/announcements/me"
-          ),
+        const [requestResponse, copyResponse] = await Promise.all([
+          apiRequest("/staff/borrow-requests"),
+          apiRequest("/book-copies"),
         ]);
-
-        setPendingRequests(
-          requestsResponse?.data || []
-        );
-
-        setBorrowers(
-          borrowersResponse?.data || []
-        );
-
-        setBookCopies(
-          copiesResponse?.data || []
-        );
-
-        setAnnouncements(
-          (
-            announcementsResponse?.data ||
-            []
-          ).slice(0, 5)
-        );
+        if (active) {
+          setRequests(asArray(requestResponse));
+          setCopies(asArray(copyResponse));
+          setError("");
+        }
       } catch (err) {
-        setError(
-          err.message ||
-            "Failed to load staff dashboard."
-        );
+        if (active) setError(err?.message || "Unable to load staff dashboard.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    };
-
-    loadDashboard();
+    }
+    load();
+    return () => { active = false; };
   }, []);
 
-  const availableCopies =
-    bookCopies.filter(
-      (copy) =>
-        copy.status === "available"
-    ).length;
-
-  const borrowedCopies =
-    bookCopies.filter(
-      (copy) =>
-        copy.status === "borrowed"
-    ).length;
-
-  const statistics = [
-    {
-      title: "Pending Requests",
-      value: pendingRequests.length,
-      description:
-        "Waiting for staff action",
-      icon: <FaClipboardCheck />,
-      iconStyle:
-        "bg-amber-100 text-amber-700",
-      path: "/staff/requests",
-    },
-    {
-      title: "Registered Borrowers",
-      value: borrowers.length,
-      description:
-        "Student and faculty accounts",
-      icon: <FaUsers />,
-      iconStyle:
-        "bg-blue-100 text-blue-700",
-      path: "/staff/borrowers",
-    },
-    {
-      title: "Available Copies",
-      value: availableCopies,
-      description:
-        "Ready for borrowing",
-      icon: <FaCheckCircle />,
-      iconStyle:
-        "bg-emerald-100 text-emerald-700",
-      path: "/staff/requests",
-    },
-    {
-      title: "Borrowed Copies",
-      value: borrowedCopies,
-      description:
-        "Currently checked out",
-      icon: <FaBookOpen />,
-      iconStyle:
-        "bg-violet-100 text-violet-700",
-      path: "/staff/returns",
-    },
+  const pending = requests.filter((request) => !request.status || lower(request.status) === "pending");
+  const borrowed = copies.filter((copy) => lower(copy.status) === "borrowed");
+  // Book-copy records do not establish due dates or an overdue count.
+  // Do not fabricate overdue statistics from copy status alone.
+  const stats = [
+    { title: "Total Book Copies", value: copies.length, icon: <FaBookOpen />, style: "bg-blue-100 text-blue-700", path: "/staff/books" },
+    { title: "Pending Requests", value: pending.length, icon: <FaClipboardCheck />, style: "bg-amber-100 text-amber-700", path: "/staff/requests" },
+    { title: "Currently Borrowed", value: borrowed.length, icon: <FaBookOpen />, style: "bg-violet-100 text-violet-700", path: "/staff/returns" },
+    { title: "Overdue Books", value: "—", icon: <FaExclamationTriangle />, style: "bg-rose-100 text-rose-700", path: "/staff/returns", description: "Requires borrowing due-date data" },
   ];
-
-  const formatDate = (value) => {
-    if (!value) {
-      return "Recently";
-    }
-
-    const date = new Date(value);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return "Recently";
-    }
-
-    return date.toLocaleString(
-      "en-US",
-      {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }
-    );
-  };
-
-  const today =
-    new Date().toLocaleDateString(
-      "en-US",
-      {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }
-    );
-
-  const staffName = [
-    currentUser?.firstName,
-    currentUser?.middleName,
-    currentUser?.lastName,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const recent = [...requests].sort((a, b) => new Date(b.created_at || b.requested_at || 0) - new Date(a.created_at || a.requested_at || 0)).slice(0, 4);
 
   return (
     <StaffLayout>
-      {/* PAGE HEADER */}
-      <div className="mb-5 sm:mb-8">
-
-        <p className="text-sm font-semibold text-blue-700">
-          Staff Dashboard
-        </p>
-
-        <div className="mt-1 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-              Welcome back,{" "}
-              {currentUser?.firstName ||
-                "Librarian"}
-              !
-            </h1>
-
-            {staffName && (
-              <p className="mt-1 text-sm text-slate-500">
-                {staffName}
-              </p>
-            )}
-          </div>
-
-          <p className="text-sm text-slate-500">
-            {today}
-          </p>
-
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-
-      {/* STATISTICS */}
-      <section>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-          {statistics.map(
-            (item) => (
-              <button
-                key={item.title}
-                type="button"
-                onClick={() =>
-                  navigate(
-                    item.path
-                  )
-                }
-                className="group rounded-2xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              >
-
-                <div className="flex items-start justify-between">
-
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${item.iconStyle}`}
-                  >
-                    {item.icon}
-                  </div>
-
-                  <FaArrowRight className="text-sm text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-700" />
-
+      <div className="mx-auto max-w-7xl space-y-5 pb-24 lg:space-y-7 lg:pb-8">
+        <header>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#0F4C97]">Staff Portal</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Welcome back, {currentUser?.firstName || "Librarian"}!</h1>
+          <p className="mt-1 text-sm text-slate-500">Library operations overview</p>
+        </header>
+        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        <section aria-label="Library statistics" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          {stats.map((stat) => (
+            <button key={stat.title} type="button" onClick={() => navigate(stat.path)} className="rounded-2xl border border-slate-100 bg-white p-3 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-5">
+              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${stat.style}`}>{stat.icon}</span>
+              <p className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">{loading ? "—" : stat.value}</p>
+              <p className="mt-1 text-xs font-semibold leading-snug text-slate-600 sm:text-sm">{stat.title}</p>
+              {stat.description && <p className="mt-1 text-[10px] leading-snug text-slate-400">{stat.description}</p>}
+            </button>
+          ))}
+        </section>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <div><h2 className="flex items-center gap-2 text-base font-bold text-slate-900 sm:text-lg"><FaHistory className="text-[#0F4C97]" /> Recent Request Activity</h2><p className="mt-1 text-xs text-slate-500">Latest borrowing requests received by staff</p></div>
+              <button type="button" onClick={() => navigate("/staff/requests")} className="flex shrink-0 items-center gap-1 text-xs font-semibold text-[#0F4C97]">View All <FaArrowRight /></button>
+            </div>
+            {loading ? <p className="py-8 text-center text-sm text-slate-400">Loading activity...</p> : recent.length === 0 ? <p className="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-500">No recent requests.</p> : (
+              <div className="space-y-3">{recent.map((request, index) => (
+                <div key={request.id ?? index} className="flex items-start gap-3 rounded-xl border border-slate-100 p-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0F4C97]"><FaBookOpen /></span>
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-900">{request.title || request.book_title || "Book request"}</p><p className="mt-0.5 truncate text-xs text-slate-500">{request.borrower_name || [request.first_name, request.last_name].filter(Boolean).join(" ") || request.school_id || "Borrower"}</p><p className="mt-1 text-xs text-slate-400">{dateText(request.created_at || request.requested_at)}</p></div>
+                  <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold capitalize text-[#0F4C97]">{request.status || "Pending"}</span>
                 </div>
-
-                <p className="mt-5 text-sm font-medium text-slate-500">
-                  {item.title}
-                </p>
-
-                <p className="mt-1 text-3xl font-bold text-slate-900">
-                  {loading
-                    ? "—"
-                    : item.value}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  {item.description}
-                </p>
-
-              </button>
-            )
-          )}
-
+              ))}</div>
+            )}
+          </section>
+          <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-2"><div><h2 className="flex items-center gap-2 text-base font-bold text-slate-900 sm:text-lg"><FaCalendarAlt className="text-[#0F4C97]" /> Books Due Soon</h2><p className="mt-1 text-xs text-slate-500">Upcoming returns</p></div><button type="button" onClick={() => navigate("/staff/returns")} className="flex shrink-0 items-center gap-1 text-xs font-semibold text-[#0F4C97]">Returns <FaArrowRight /></button></div>
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center"><FaClock className="mx-auto text-2xl text-[#0F4C97]" /><p className="mt-3 text-sm font-semibold text-slate-700">Due-date information not available yet</p><p className="mt-2 text-xs leading-5 text-slate-500">The current staff dashboard APIs provide book-copy status and borrowing requests, but not a confirmed list of active loans with due dates. This section will show upcoming returns once a permitted due-date endpoint is connected.</p></div>
+          </section>
         </div>
-      </section>
-
-      {/* MAIN CONTENT */}
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_0.8fr]">
-
-        {/* ANNOUNCEMENTS */}
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-
-          <div className="mb-5 flex items-center gap-3">
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-              <FaBullhorn />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
-                Library Announcements
-              </h2>
-
-              <p className="text-sm text-slate-500">
-                Important library updates for staff
-              </p>
-            </div>
-
-          </div>
-
-          {loading ? (
-            <div className="py-12 text-center text-sm text-slate-400">
-              Loading announcements...
-            </div>
-          ) : announcements.length ===
-            0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center">
-
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-700">
-                <FaBullhorn />
-              </div>
-
-              <h3 className="mt-4 font-semibold text-slate-800">
-                No announcements
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-500">
-                New library announcements will appear here.
-              </p>
-
-            </div>
-          ) : (
-            <div className="space-y-3">
-
-              {announcements.map(
-                (announcement) => (
-                  <article
-                    key={
-                      announcement.id
-                    }
-                    className="flex gap-3 rounded-xl border border-slate-100 p-4 transition hover:border-blue-200 hover:bg-blue-50/40 sm:gap-4"
-                  >
-
-                    <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                      <FaBullhorn className="text-sm" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-
-                        <div>
-                          <h3 className="font-semibold text-slate-900">
-                            {
-                              announcement.title
-                            }
-                          </h3>
-
-                          <span className="mt-2 inline-block rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold capitalize text-blue-700">
-                            {announcement.audience ===
-                            "all"
-                              ? "Everyone"
-                              : announcement.audience}
-                          </span>
-                        </div>
-
-                        <span className="shrink-0 text-xs text-slate-400">
-                          {formatDate(
-                            announcement.published_at ||
-                              announcement.created_at
-                          )}
-                        </span>
-
-                      </div>
-
-                      <p className="mt-2 text-sm leading-6 text-slate-500">
-                        {
-                          announcement.message
-                        }
-                      </p>
-
-                    </div>
-
-                  </article>
-                )
-              )}
-
-            </div>
-          )}
-
-        </section>
-
-        {/* QUICK ACTIONS */}
-        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-
-          <h2 className="text-xl font-bold text-slate-900">
-            Quick Actions
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Common library staff tasks
-          </p>
-
-          <div className="mt-5 space-y-3">
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  "/staff/requests"
-                )
-              }
-              className="flex w-full items-center gap-4 rounded-xl border border-slate-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
-            >
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <FaClipboardCheck />
-              </div>
-
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800">
-                  Process Requests
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Approve or reject borrow requests
-                </p>
-              </div>
-
-              <FaArrowRight className="text-slate-300" />
-
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  "/staff/returns"
-                )
-              }
-              className="flex w-full items-center gap-4 rounded-xl border border-slate-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
-            >
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                <FaBookOpen />
-              </div>
-
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800">
-                  Process Return
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Return borrowed books by barcode
-                </p>
-              </div>
-
-              <FaArrowRight className="text-slate-300" />
-
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  "/staff/borrowers"
-                )
-              }
-              className="flex w-full items-center gap-4 rounded-xl border border-slate-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50"
-            >
-
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                <FaUsers />
-              </div>
-
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800">
-                  Find Borrower
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Search registered library borrowers
-                </p>
-              </div>
-
-              <FaArrowRight className="text-slate-300" />
-
-            </button>
-
-          </div>
-
-        </section>
-
       </div>
     </StaffLayout>
   );
 }
-
-export default StaffDashboard;

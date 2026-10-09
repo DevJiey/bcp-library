@@ -13,6 +13,7 @@ import {
     FaSearch,
     FaBook,
     FaTimes,
+    FaFilter,
 } from "react-icons/fa";
 
 import AdminLayout from "../../layouts/AdminLayout";
@@ -33,6 +34,8 @@ function BookCopies() {
 
     const [statusFilter, setStatusFilter] =
         useState("All");
+
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     const [loading, setLoading] =
         useState(true);
@@ -427,7 +430,7 @@ function BookCopies() {
                             true
                         )
                     }
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
+                    className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
                 >
                     <FaPlus />
                     Add Book Copy
@@ -442,13 +445,13 @@ function BookCopies() {
             )}
 
             {/* TOOLBAR */}
-            <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <section className="mb-4 lg:mb-6 hidden lg:block rounded-2xl bg-white p-3 lg:p-5 shadow-sm ring-1 ring-slate-200">
 
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 lg:gap-4 lg:flex-row lg:items-center lg:justify-between">
 
                     <div className="flex items-center gap-4">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                        <div className="hidden lg:flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                             <FaCopy />
                         </div>
 
@@ -470,9 +473,9 @@ function BookCopies() {
 
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="flex items-center gap-2 lg:gap-3">
 
-                        <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
+                        <div className="flex min-w-0 flex-1 items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
 
                             <FaSearch className="text-slate-400" />
 
@@ -491,7 +494,7 @@ function BookCopies() {
                                             .value
                                     )
                                 }
-                                className="w-full px-3 py-2 outline-none sm:w-72"
+                                className="min-w-0 w-full bg-transparent px-3 py-2 outline-none lg:w-72"
                             />
 
                         </div>
@@ -509,7 +512,7 @@ function BookCopies() {
                                         .value
                                 )
                             }
-                            className="rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+                            className="hidden lg:block rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
                         >
                             <option value="All">
                                 All Status
@@ -542,8 +545,89 @@ function BookCopies() {
 
             </section>
 
+            {/* Mobile: compact search and filter in one row */}
+            <section className="mb-4 lg:hidden" aria-label="Search and filter book copies">
+                <div className="mb-2 flex items-center justify-between px-1">
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-slate-900">Physical Book Copies</h2>
+                        <p className="text-xs text-slate-500">
+                            {loading ? "Loading..." : `${filteredCopies.length} ${filteredCopies.length === 1 ? "copy" : "copies"} found`}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+                        <FaSearch className="shrink-0 text-sm text-slate-400" />
+                        <input
+                            type="search"
+                            aria-label="Search book copies"
+                            placeholder="Search copies..."
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            className="h-11 min-w-0 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() => setMobileFiltersOpen((open) => !open)}
+                        aria-label="Filter book copies by status"
+                        aria-expanded={mobileFiltersOpen}
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border shadow-sm transition ${mobileFiltersOpen || statusFilter !== "All" ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-blue-800"}`}
+                    >
+                        <FaFilter />
+                    </button>
+                </div>
+                {mobileFiltersOpen && (
+                    <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <label htmlFor="mobile-copy-status" className="mb-2 block text-xs font-semibold text-slate-600">Filter by status</label>
+                        <select
+                            id="mobile-copy-status"
+                            value={statusFilter}
+                            onChange={(event) => { setStatusFilter(event.target.value); setMobileFiltersOpen(false); }}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-600"
+                        >
+                            {["All", "Available", "Borrowed", "Overdue", "Damaged", "Lost"].map((status) => (
+                                <option key={status} value={status}>{status === "All" ? "All Status" : status}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+            </section>
+
+            {/* MOBILE COPY CARDS */}
+            <section className="space-y-3 lg:hidden" aria-label="Book copies">
+                {loading ? (
+                    <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">Loading book copies...</div>
+                ) : filteredCopies.length === 0 ? (
+                    <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">No book copies found.</div>
+                ) : filteredCopies.map((copy) => {
+                    const status = getStatus(copy);
+                    const condition = getCondition(copy);
+                    return (
+                        <article key={copy.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><FaBook /></div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="break-words text-sm font-bold text-slate-900">{getBookTitle(copy)}</h3>
+                                    <p className="mt-1 break-all text-xs text-slate-500">{copy.barcode || "No barcode"}</p>
+                                </div>
+                                <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold capitalize ${getStatusStyle(status)}`}>{status}</span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-xs">
+                                <div><p className="text-slate-400">Accession No.</p><p className="mt-1 break-all font-semibold text-slate-800">{copy.accession_number || copy.accessionNumber || "—"}</p></div>
+                                <div><p className="text-slate-400">Shelf</p><p className="mt-1 font-semibold text-slate-800">{copy.shelf_location || copy.shelfLocation || "—"}</p></div>
+                                <div><p className="text-slate-400">Condition</p><span className={`mt-1 inline-block rounded-full px-2 py-1 font-semibold capitalize ${getConditionStyle(condition)}`}>{condition}</span></div>
+                            </div>
+                            <button type="button" onClick={() => setSelectedCopy(copy)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-800"><FaBarcode /> View Barcode</button>
+                        </article>
+                    );
+                })}
+            </section>
+
+            <button type="button" aria-label="Add book copy" onClick={() => setShowAddModal(true)} className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg shadow-blue-900/20 lg:hidden"><FaPlus /></button>
+
             {/* TABLE */}
-            <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            <section className="hidden lg:block overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
                 <div className="overflow-x-auto">
 

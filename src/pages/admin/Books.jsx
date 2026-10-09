@@ -8,6 +8,7 @@ import {
     FaBook,
     FaPlus,
     FaSearch,
+    FaFilter,
     FaTimes,
 } from "react-icons/fa";
 
@@ -36,6 +37,8 @@ function AdminBooks() {
 
     const [categoryFilter, setCategoryFilter] =
         useState("All");
+
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const [loading, setLoading] =
         useState(true);
@@ -450,7 +453,7 @@ function AdminBooks() {
                             true
                         )
                     }
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                    className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-blue-800"
                 >
                     <FaPlus />
                     Add New Book
@@ -464,6 +467,70 @@ function AdminBooks() {
                 </div>
             )}
 
+            {/* MOBILE SEARCH - compact like the reference */}
+            <section className="mb-4 lg:hidden">
+                <div className="flex items-center gap-2">
+                    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-600">
+                        <FaSearch className="shrink-0 text-sm text-slate-400" />
+                        <input
+                            type="search"
+                            aria-label="Search books"
+                            placeholder="Search books..."
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            className="min-w-0 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        aria-label="Filter books by category"
+                        aria-expanded={showMobileFilters}
+                        onClick={() => setShowMobileFilters((value) => !value)}
+                        className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm ${
+                            showMobileFilters || categoryFilter !== "All"
+                                ? "border-blue-300 text-blue-700"
+                                : "border-slate-200 text-slate-600"
+                        }`}
+                    >
+                        <FaFilter />
+                        {categoryFilter !== "All" && (
+                            <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-blue-600" />
+                        )}
+                    </button>
+                </div>
+                {showMobileFilters && (
+                    <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <label htmlFor="mobile-book-category" className="mb-2 block text-xs font-semibold text-slate-600">
+                            Filter by category
+                        </label>
+                        <select
+                            id="mobile-book-category"
+                            value={categoryFilter}
+                            onChange={(event) => setCategoryFilter(event.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-600"
+                        >
+                            {categoryOptions.map((category) => (
+                                <option key={category} value={category}>
+                                    {category === "All" ? "All Categories" : category}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => setShowMobileFilters(false)}
+                            className="mt-3 w-full rounded-xl bg-[#0F4C97] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                            Apply Filter
+                        </button>
+                    </div>
+                )}
+                <p className="mt-2 px-1 text-xs text-slate-500">
+                    {filteredBooks.length} {filteredBooks.length === 1 ? "book" : "books"} found
+                </p>
+            </section>
+
+            {/* DESKTOP SEARCH - preserve original layout */}
+            <div className="hidden lg:block">
             {/* SEARCH */}
             <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
 
@@ -563,6 +630,8 @@ function AdminBooks() {
 
             </section>
 
+            </div>
+
             {/* TABLE */}
             {loading ? (
                 <LoadingSkeleton
@@ -570,7 +639,7 @@ function AdminBooks() {
                     columns={6}
                 />
             ) : (
-                <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <section className="hidden lg:block overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
                     <div className="overflow-x-auto">
 
@@ -717,6 +786,60 @@ function AdminBooks() {
                     )}
 
                 </section>
+            )}
+
+            {/* MOBILE BOOK CARDS */}
+            {!loading && (
+                <div className="space-y-3 lg:hidden">
+                    {filteredBooks.length === 0 ? (
+                        <div className="rounded-2xl bg-white px-5 py-10 text-center shadow-sm ring-1 ring-slate-200">
+                            <FaBook className="mx-auto text-3xl text-slate-300" />
+                            <p className="mt-3 font-semibold text-slate-800">No books found</p>
+                            <p className="mt-1 text-sm text-slate-500">Try another search or category.</p>
+                        </div>
+                    ) : (
+                        filteredBooks.map((book) => (
+                            <article key={book.id} className="flex gap-3 rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-slate-200">
+                                <div className="flex h-24 w-17 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 text-blue-700" style={{ width: '4.25rem' }}>
+                                    {book.cover_image_url || book.coverImageUrl ? (
+                                        <img
+                                            src={book.cover_image_url || book.coverImageUrl}
+                                            alt={`Cover of ${book.title}`}
+                                            className="h-full w-full object-cover"
+                                            onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                        />
+                                    ) : (
+                                        <FaBook className="text-2xl" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="line-clamp-2 text-sm font-bold text-slate-900">{book.title}</h3>
+                                    <p className="mt-1 truncate text-xs text-slate-500">{getBookAuthors(book)}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{getCategoryName(book)}</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${book.is_active === false ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                                            {book.is_active === false ? 'Inactive' : 'Active'}
+                                        </span>
+                                        {book.isbn && <span className="truncate text-[11px] text-slate-400">ISBN {book.isbn}</span>}
+                                    </div>
+                                </div>
+                            </article>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {/* MOBILE ADD BOOK BUTTON - stays above the bottom navigation */}
+            {!showAddModal && (
+                <button
+                    type="button"
+                    aria-label="Add new book"
+                    onClick={() => setShowAddModal(true)}
+                    className="fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-white shadow-xl transition hover:bg-blue-800 lg:hidden"
+                    style={{ bottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
+                >
+                    <FaPlus className="text-xl" />
+                </button>
             )}
 
             {/* ADD BOOK MODAL */}

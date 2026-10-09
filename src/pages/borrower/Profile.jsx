@@ -419,10 +419,10 @@ function Profile() {
           Account Information
         </p>
 
-        <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-1 flex flex-row items-center justify-between gap-3 sm:items-end">
 
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">
               My Profile
             </h1>
 
@@ -437,7 +437,7 @@ function Profile() {
               onClick={() =>
                 setEditing(true)
               }
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-800 sm:px-5 sm:py-3 sm:text-sm"
             >
               <FaEdit />
 
@@ -455,14 +455,14 @@ function Profile() {
       )}
 
       {profile && (
-        <div className="grid gap-6 xl:grid-cols-[340px_1fr]">
+        <div className="grid min-w-0 gap-4 sm:gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
 
           {/* PROFILE SUMMARY */}
-          <aside className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+          <aside className="min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
-            <div className="bg-gradient-to-br from-[#0F4C97] to-blue-700 px-6 py-8 text-center text-white">
+            <div className="bg-gradient-to-br from-[#0F4C97] to-blue-700 px-4 py-6 text-center text-white sm:px-6 sm:py-8">
 
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/20 text-3xl font-bold ring-4 ring-white/20">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-2xl font-bold ring-4 ring-white/20 sm:h-24 sm:w-24 sm:text-3xl">
                 {initials}
               </div>
 
@@ -470,7 +470,7 @@ function Profile() {
                 {fullName}
               </h2>
 
-              <p className="mt-1 text-sm text-blue-100">
+              <p className="mt-1 break-all text-sm text-blue-100">
                 {user.email}
               </p>
 
@@ -494,7 +494,7 @@ function Profile() {
               </span>
             </div>
 
-            <div className="space-y-4 p-6">
+            <div className="space-y-4 p-4 sm:p-6">
 
               <div className="flex items-center gap-3">
 
@@ -605,7 +605,7 @@ function Profile() {
           {/* EDIT FORM */}
           <section className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
-            <div className="border-b border-slate-100 px-6 py-5">
+            <div className="border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
 
               <h2 className="text-xl font-bold text-slate-900">
                 Personal Information
@@ -623,10 +623,10 @@ function Profile() {
               onSubmit={
                 handleSave
               }
-              className="p-6"
+              className="p-4 sm:p-6"
             >
 
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid min-w-0 gap-4 md:grid-cols-2 md:gap-5">
 
                 {/* SCHOOL ID */}
                 <div>

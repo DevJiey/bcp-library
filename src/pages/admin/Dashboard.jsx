@@ -90,17 +90,17 @@ function AdminDashboard() {
 
           setBooks(
             booksResponse?.data ||
-              []
+            []
           );
 
           setUsers(
             usersResponse?.data ||
-              []
+            []
           );
 
           setCopies(
             copiesResponse?.data ||
-              []
+            []
           );
 
           setActivities(
@@ -110,7 +110,7 @@ function AdminDashboard() {
         } catch (err) {
           setError(
             err.message ||
-              "Failed to load admin dashboard."
+            "Failed to load admin dashboard."
           );
         } finally {
           setLoading(false);
@@ -125,6 +125,12 @@ function AdminDashboard() {
       (user) =>
         user.role === "borrower"
     );
+
+  const pendingInvitations = users.filter(
+    (user) =>
+      user.role === "borrower" &&
+      String(user.account_status ?? user.accountStatus ?? "").toLowerCase() === "pending"
+  ).length;
 
   const staff =
     users.filter(
@@ -143,33 +149,33 @@ function AdminDashboard() {
     copies.filter(
       (copy) =>
         copy.status ===
-          "borrowed" ||
+        "borrowed" ||
         copy.status ===
-          "overdue"
+        "overdue"
     ).length;
 
   const unavailableCopies =
     copies.filter(
       (copy) =>
         copy.status !==
-          "available" &&
+        "available" &&
         copy.status !==
-          "borrowed" &&
+        "borrowed" &&
         copy.status !==
-          "overdue"
+        "overdue"
     ).length;
 
   const damagedOrLostCopies =
     copies.filter(
       (copy) =>
         copy.condition ===
-          "damaged" ||
+        "damaged" ||
         copy.condition ===
-          "lost" ||
+        "lost" ||
         copy.status ===
-          "damaged" ||
+        "damaged" ||
         copy.status ===
-          "lost"
+        "lost"
     ).length;
 
   const cards = [
@@ -192,7 +198,7 @@ function AdminDashboard() {
       icon: <FaUsers />,
       color:
         "bg-emerald-100 text-emerald-700",
-      path: "/admin/staff",
+      path: "/admin/borrowers",
     },
     {
       title: "Library Staff",
@@ -205,16 +211,12 @@ function AdminDashboard() {
       path: "/admin/staff",
     },
     {
-      title:
-        "Borrowed Copies",
-      value:
-        borrowedCopies,
-      subtitle:
-        "Currently Checked Out",
-      icon: <FaExchangeAlt />,
-      color:
-        "bg-amber-100 text-amber-700",
-      path: "/admin/copies",
+      title: "Pending Invitations",
+      value: pendingInvitations,
+      subtitle: "Awaiting Account Setup",
+      icon: <FaClipboardList />,
+      color: "bg-amber-100 text-amber-700",
+      path: "/admin/borrowers",
     },
   ];
 
@@ -476,7 +478,7 @@ function AdminDashboard() {
       )}
 
       {/* CARDS */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 
         {cards.map(
           (card) => (
@@ -488,7 +490,7 @@ function AdminDashboard() {
                   card.path
                 )
               }
-              className="group rounded-2xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
+              className="group min-w-0 rounded-2xl bg-white p-3.5 text-left shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg sm:p-5"
             >
 
               <div className="flex items-start justify-between">
@@ -499,21 +501,21 @@ function AdminDashboard() {
                   {card.icon}
                 </div>
 
-                <FaArrowRight className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-700" />
+                <FaArrowRight className="text-xs text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-700 sm:text-base" />
 
               </div>
 
-              <p className="mt-5 text-sm text-slate-500">
+              <p className="mt-3 text-xs font-medium leading-5 text-slate-500 sm:mt-5 sm:text-sm">
                 {card.title}
               </p>
 
-              <h2 className="mt-1 text-3xl font-bold text-slate-900">
+              <h2 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                 {loading
                   ? "—"
                   : card.value.toLocaleString()}
               </h2>
 
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-[10px] leading-4 text-slate-400 sm:text-xs">
                 {card.subtitle}
               </p>
 
@@ -618,7 +620,7 @@ function AdminDashboard() {
                             `${activity.module || "System"} activity`}
                         </p>
 
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-[10px] leading-4 text-slate-400 sm:text-xs">
                           {[
                             activity.first_name,
                             activity.last_name,
@@ -641,8 +643,8 @@ function AdminDashboard() {
 
         </section>
 
-        {/* QUICK ACTIONS */}
-        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        {/* QUICK ACTIONS - Desktop only */}
+        <section className="hidden lg:block rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
 
           <h2 className="text-xl font-bold text-slate-900">
             Quick Actions
@@ -738,10 +740,10 @@ function AdminDashboard() {
               const percentage =
                 totalCopies > 0
                   ? Math.round(
-                      (item.value /
-                        totalCopies) *
-                        100
-                    )
+                    (item.value /
+                      totalCopies) *
+                    100
+                  )
                   : 0;
 
               return (

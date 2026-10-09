@@ -6,6 +6,8 @@ import {
     FaPlus,
     FaRedo,
     FaSearch,
+    FaFilter,
+    FaChevronRight,
     FaTimes,
     FaUsers,
 } from "react-icons/fa";
@@ -53,6 +55,8 @@ function Borrowers() {
     const [notice, setNotice] = useState("");
     const [search, setSearch] = useState("");
     const [typeFilter, setTypeFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
@@ -105,9 +109,10 @@ function Borrowers() {
                 getSchoolId(borrower).toLowerCase().includes(keyword) ||
                 (borrower.email || "").toLowerCase().includes(keyword);
 
-            return matchesType && matchesSearch;
+            const matchesStatus = statusFilter === "all" || getStatus(borrower).toLowerCase() === statusFilter;
+            return matchesType && matchesSearch && matchesStatus;
         });
-    }, [borrowers, search, typeFilter]);
+    }, [borrowers, search, typeFilter, statusFilter]);
 
     const updateForm = (field, value) => {
         setForm((previous) => ({
@@ -262,7 +267,7 @@ function Borrowers() {
                         setForm({ ...emptyForm });
                         setFormOpen(true);
                     }}
-                    className="flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
+                    className="hidden lg:flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
                 >
                     <FaPlus />
                     Add Borrower
@@ -287,7 +292,70 @@ function Borrowers() {
                 </div>
             )}
 
-            <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            {/* Compact mobile search, filters, and status tabs */}
+            <section className="mb-5 lg:hidden">
+                <div className="flex items-center gap-2">
+                    <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500">
+                        <FaSearch className="shrink-0 text-slate-400" />
+                        <input
+                            type="search"
+                            aria-label="Search borrowers"
+                            placeholder="Search borrowers..."
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            className="w-full min-w-0 bg-transparent text-sm outline-none"
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        aria-label="Filter borrower type"
+                        aria-expanded={mobileFiltersOpen}
+                        onClick={() => setMobileFiltersOpen((open) => !open)}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
+                    >
+                        <FaFilter />
+                    </button>
+                </div>
+                {mobileFiltersOpen && (
+                    <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <label htmlFor="mobile-borrower-type" className="mb-2 block text-xs font-semibold text-slate-600">Borrower type</label>
+                        <select
+                            id="mobile-borrower-type"
+                            value={typeFilter}
+                            onChange={(event) => setTypeFilter(event.target.value)}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => setMobileFiltersOpen(false)}
+                            className="mt-3 w-full rounded-xl bg-blue-700 py-2.5 text-sm font-semibold text-white"
+                        >Apply Filter</button>
+                    </div>
+                )}
+                <div role="group" aria-label="Borrower account status" className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {[
+                        { value: "all", label: "All" },
+                        { value: "pending", label: "Invited / Pending" },
+                        { value: "active", label: "Active" },
+                        { value: "inactive", label: "Inactive" },
+                    ].map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            aria-pressed={statusFilter === option.value}
+                            onClick={() => setStatusFilter(option.value)}
+                            className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${statusFilter === option.value ? "bg-blue-800 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}
+                        >{option.label}</button>
+                    ))}
+                </div>
+                <p className="mt-2 px-1 text-xs text-slate-500">{loading ? "Loading..." : `${filteredBorrowers.length} borrower(s) found`}</p>
+            </section>
+
+            <section className="mb-6 hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:block">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <FaUsers className="text-xl text-blue-700" />
@@ -331,7 +399,53 @@ function Borrowers() {
                 </div>
             </section>
 
-            <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            {/* Mobile borrower cards */}
+            <section className="space-y-3 lg:hidden">
+                {!loading && filteredBorrowers.map((borrower) => {
+                    const status = getStatus(borrower).toLowerCase();
+                    const pending = status === "pending";
+                    const name = getFullName(borrower) || "Unnamed Borrower";
+                    return (
+                        <article key={borrower.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-800">
+                                    <FaUsers />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-bold text-slate-900">{name}</p>
+                                    <p className="truncate text-xs text-slate-500">{borrower.email || getSchoolId(borrower)}</p>
+                                    <p className="mt-1 text-xs capitalize text-slate-500">{getType(borrower)} · {getSchoolId(borrower) || "No school ID"}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    aria-label={`View ${name}`}
+                                    disabled={detailsLoading}
+                                    onClick={() => openDetails(borrower)}
+                                    className="rounded-full p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
+                                ><FaChevronRight /></button>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${status === "active" ? "bg-green-100 text-green-700" : pending ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"}`}>
+                                    {pending ? "Invited / Pending" : status}
+                                </span>
+                                {pending && (
+                                    <button
+                                        type="button"
+                                        disabled={resendingId !== null}
+                                        onClick={() => handleResend(borrower)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 disabled:opacity-50"
+                                    ><FaRedo />{resendingId === borrower.id ? "Sending..." : "Resend"}</button>
+                                )}
+                            </div>
+                        </article>
+                    );
+                })}
+                {loading && <p className="py-8 text-center text-sm text-slate-500">Loading borrowers...</p>}
+                {!loading && filteredBorrowers.length === 0 && <p className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">No borrowers found.</p>}
+            </section>
+
+            {/* Desktop table preserved */}
+            <section className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:block">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[850px] text-left">
                         <thead className="bg-slate-50 text-sm text-slate-700">
@@ -438,6 +552,23 @@ function Borrowers() {
                     </p>
                 )}
             </section>
+
+            {/* Mobile Invite Borrower action */}
+            {!formOpen && !selectedBorrower && (
+                <button
+                    type="button"
+                    aria-label="Invite borrower"
+                    title="Invite borrower"
+                    onClick={() => {
+                        setError("");
+                        setNotice("");
+                        setForm({ ...emptyForm });
+                        setFormOpen(true);
+                    }}
+                    className="fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-blue-800 text-xl text-white shadow-lg hover:bg-blue-900 lg:hidden"
+                    style={{ bottom: "calc(6.5rem + env(safe-area-inset-bottom))" }}
+                ><FaPlus /></button>
+            )}
 
             {formOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">

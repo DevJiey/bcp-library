@@ -255,14 +255,14 @@ function Reports() {
     return (
         <AdminLayout>
             {/* HEADER */}
-            <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="mb-5 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-end lg:justify-between">
 
                 <div>
                     <p className="text-sm font-semibold text-blue-700">
                         Analytics and Reports
                     </p>
 
-                    <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+                    <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-3xl">
                         Library Reports
                     </h1>
 
@@ -276,7 +276,7 @@ function Reports() {
                     onClick={
                         handlePrint
                     }
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800 print:hidden"
+                    className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800 print:hidden"
                 >
                     <FaPrint />
 
@@ -285,6 +285,17 @@ function Reports() {
 
             </div>
 
+            {/* Mobile floating Print button: below AI Assistant, above bottom navigation */}
+            <button
+                type="button"
+                onClick={handlePrint}
+                aria-label="Print Report"
+                title="Print Report"
+                className="fixed right-4 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg ring-4 ring-white transition hover:bg-blue-800 active:scale-95 lg:hidden print:hidden"
+            >
+                <FaPrint />
+            </button>
+
             {error && (
                 <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                     {error}
@@ -292,7 +303,7 @@ function Reports() {
             )}
 
             {/* REPORT TYPES */}
-            <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5 print:hidden">
+            <section className="mb-5 flex gap-2 overflow-x-auto pb-2 md:mb-6 md:grid md:gap-4 md:overflow-visible md:pb-0 md:grid-cols-2 xl:grid-cols-5 print:hidden">
 
                 {reportOptions.map(
                     (report) => (
@@ -310,7 +321,7 @@ function Reports() {
                                     ""
                                 );
                             }}
-                            className={`rounded-2xl bg-white p-5 text-left shadow-sm ring-1 transition ${activeReport ===
+                            className={`min-w-[148px] max-w-[180px] shrink-0 rounded-2xl bg-white p-3 text-left shadow-sm ring-1 transition md:min-w-0 md:max-w-none md:p-5 ${activeReport ===
                                     report.id
                                     ? "ring-2 ring-blue-600"
                                     : "ring-slate-200 hover:ring-blue-300"
@@ -325,13 +336,13 @@ function Reports() {
                                 }
                             </div>
 
-                            <h2 className="mt-4 font-bold text-slate-900">
+                            <h2 className="mt-3 text-sm font-bold text-slate-900 md:mt-4 md:text-base">
                                 {
                                     report.title
                                 }
                             </h2>
 
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                            <p className="mt-1 hidden text-xs leading-5 text-slate-500 md:block">
                                 {
                                     report.description
                                 }
@@ -358,7 +369,7 @@ function Reports() {
                 <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
                     {/* REPORT HEADER */}
-                    <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-5">
 
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">
@@ -378,7 +389,7 @@ function Reports() {
                             </p>
                         </div>
 
-                        <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100 print:hidden">
+                        <div className="flex w-full min-w-0 items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100 lg:w-auto print:hidden">
 
                             <FaSearch className="text-slate-400" />
 
@@ -397,25 +408,97 @@ function Reports() {
                                             .value
                                     )
                                 }
-                                className="w-full px-3 py-2 outline-none sm:w-72"
+                                className="min-w-0 w-full bg-transparent px-3 py-2 outline-none lg:w-72"
                             />
 
                         </div>
 
                     </div>
 
-                    <ReportTable
-                        type={
-                            activeReport
-                        }
-                        data={
-                            filteredData
-                        }
-                    />
+                    <div className="md:hidden print:hidden">
+                        <MobileReportCards type={activeReport} data={filteredData} />
+                    </div>
+                    <div className="hidden md:block print:block">
+                        <ReportTable type={activeReport} data={filteredData} />
+                    </div>
 
                 </section>
             )}
         </AdminLayout>
+    );
+}
+
+
+/* Mobile-only cards. Desktop keeps the original report tables. */
+function MobileReportCards({ type, data }) {
+    if (!data.length) {
+        return (
+            <div className="px-5 py-12 text-center">
+                <FaChartBar className="mx-auto text-3xl text-slate-300" />
+                <p className="mt-3 font-semibold text-slate-700">No records found</p>
+                <p className="mt-1 text-sm text-slate-500">No records match this report.</p>
+            </div>
+        );
+    }
+
+    const formatDate = (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    };
+
+    return (
+        <div className="space-y-3 bg-slate-50/70 p-3">
+            {data.map((item, index) => {
+                const title = item.title || item.book_title || item.book || "Library Book";
+                const borrower = [item.first_name, item.middle_name, item.last_name].filter(Boolean).join(" ") || item.borrower_name || "Borrower";
+                const status = item.status || item.borrow_status || item.request_status || "Unknown";
+                const count = item.count ?? item.total ?? item.total_count ?? 0;
+                return (
+                    <article key={item.id || item.book_id || item.borrow_transaction_id || `${type}-${index}`} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        {type === "mostBorrowed" ? (
+                            <>
+                                <div className="flex items-start gap-3">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 font-bold text-blue-800">#{index + 1}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="break-words font-semibold text-slate-900">{title}</p>
+                                        <p className="mt-1 break-all text-xs text-slate-500">ISBN: {item.isbn || "—"}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+                                    <span className="text-slate-500">Times borrowed</span>
+                                    <span className="rounded-full bg-blue-50 px-3 py-1 font-bold text-blue-800">{item.borrow_count ?? item.total_borrows ?? item.total ?? 0}</span>
+                                </div>
+                            </>
+                        ) : type === "overdue" ? (
+                            <>
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="min-w-0 break-words font-semibold text-slate-900">{title}</p>
+                                    <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">Overdue</span>
+                                </div>
+                                <p className="mt-2 text-sm text-slate-700">{borrower}</p>
+                                {item.school_id && <p className="text-xs text-slate-500">ID: {item.school_id}</p>}
+                                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 text-xs">
+                                    <div><p className="text-slate-500">Barcode</p><p className="mt-1 break-all font-semibold text-slate-800">{item.barcode || "—"}</p></div>
+                                    <div><p className="text-slate-500">Due date</p><p className="mt-1 font-semibold text-red-700">{formatDate(item.due_at || item.due_date)}</p></div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-xs text-slate-500">{type === "borrowingSummary" ? "Borrowing status" : "Request status"}</p>
+                                    <p className="mt-1 break-words font-semibold capitalize text-slate-900">{status}</p>
+                                </div>
+                                <div className="shrink-0 rounded-xl bg-blue-50 px-4 py-2 text-center">
+                                    <p className="text-xl font-bold text-blue-900">{count}</p>
+                                    <p className="text-[10px] text-blue-700">Records</p>
+                                </div>
+                            </div>
+                        )}
+                    </article>
+                );
+            })}
+        </div>
     );
 }
 
@@ -528,7 +611,7 @@ function OverviewReport({
     ];
 
     return (
-        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:p-6">
 
             <div className="mb-6">
                 <h2 className="text-xl font-bold text-slate-900">
@@ -540,7 +623,7 @@ function OverviewReport({
                 </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
 
                 {cards.map(
                     (card) => (
@@ -548,7 +631,7 @@ function OverviewReport({
                             key={
                                 card.label
                             }
-                            className="rounded-xl border border-slate-100 p-5"
+                            className="min-w-0 rounded-xl border border-slate-100 p-3 sm:p-5"
                         >
 
                             <div
@@ -559,13 +642,13 @@ function OverviewReport({
                                 }
                             </div>
 
-                            <p className="mt-4 text-sm text-slate-500">
+                            <p className="mt-3 text-xs text-slate-500 sm:mt-4 sm:text-sm">
                                 {
                                     card.label
                                 }
                             </p>
 
-                            <p className="mt-1 text-3xl font-bold text-slate-900">
+                            <p className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
                                 {Number.isFinite(
                                     card.value
                                 )

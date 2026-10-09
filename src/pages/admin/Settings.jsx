@@ -227,196 +227,69 @@ function Settings() {
 
     return (
         <AdminLayout>
-            {/* HEADER */}
-            <div className="mb-8">
-
-                <p className="text-sm font-semibold text-blue-700">
-                    System Configuration
-                </p>
-
-                <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
-                    System Settings
-                </h1>
-
-                <p className="mt-2 text-sm text-slate-500">
-                    Configure the borrowing rules used by the library system.
-                </p>
-
+            <div className="mb-5 sm:mb-8">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 sm:text-sm">System Configuration</p>
+                <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">System Settings</h1>
+                <p className="mt-1 text-sm text-slate-500">Manage library borrowing rules.</p>
             </div>
 
             {error && (
-                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                    {error}
-                </div>
+                <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
             )}
 
             {loading ? (
-                <div className="rounded-2xl bg-white px-6 py-16 text-center text-sm text-slate-400 shadow-sm ring-1 ring-slate-200">
-                    Loading library settings...
-                </div>
+                <div className="rounded-2xl bg-white px-5 py-14 text-center text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">Loading library settings...</div>
             ) : (
-                <div className="space-y-6">
-
-                    {/* BORROW LIMITS */}
+                <div className="space-y-4 pb-24 lg:space-y-6 lg:pb-0">
                     <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-
-                        <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-5">
-
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                <FaBookReader />
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700"><FaBookReader /></div>
+                            <div className="min-w-0">
+                                <h2 className="font-bold text-slate-900 sm:text-lg">Borrowing Limits</h2>
+                                <p className="text-xs text-slate-500 sm:text-sm">Maximum active books per borrower</p>
                             </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">
-                                    Borrowing Limits
-                                </h2>
-
-                                <p className="text-sm text-slate-500">
-                                    Maximum number of active books a borrower may have.
-                                </p>
-                            </div>
-
                         </div>
-
-                        <div className="grid gap-5 p-6 md:grid-cols-2">
-
-                            <SettingField
-                                icon={
-                                    <FaGraduationCap />
-                                }
-                                label="Student Borrow Limit"
-                                name="studentBorrowLimit"
-                                value={
-                                    settings.studentBorrowLimit
-                                }
-                                onChange={
-                                    handleChange
-                                }
-                                min="1"
-                                max="20"
-                                suffix="books"
-                                description="Maximum active borrowings allowed for a student."
-                            />
-
-                            <SettingField
-                                icon={
-                                    <FaChalkboardTeacher />
-                                }
-                                label="Faculty Borrow Limit"
-                                name="facultyBorrowLimit"
-                                value={
-                                    settings.facultyBorrowLimit
-                                }
-                                onChange={
-                                    handleChange
-                                }
-                                min="1"
-                                max="20"
-                                suffix="books"
-                                description="Maximum active borrowings allowed for a faculty member."
-                            />
-
+                        <div className="grid gap-5 p-4 sm:p-6 md:grid-cols-2">
+                            <SettingField icon={<FaGraduationCap />} label="Student Borrow Limit" name="studentBorrowLimit" value={settings.studentBorrowLimit} onChange={handleChange} min="1" max="20" suffix="books" description="Maximum active borrowings allowed for a student." />
+                            <SettingField icon={<FaChalkboardTeacher />} label="Faculty Borrow Limit" name="facultyBorrowLimit" value={settings.facultyBorrowLimit} onChange={handleChange} min="1" max="20" suffix="books" description="Maximum active borrowings allowed for a faculty member." />
                         </div>
-
                     </section>
 
-                    {/* BORROWING PERIOD */}
                     <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-
-                        <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-5">
-
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                                <FaClock />
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700"><FaClock /></div>
+                            <div className="min-w-0">
+                                <h2 className="font-bold text-slate-900 sm:text-lg">Borrowing Period</h2>
+                                <p className="text-xs text-slate-500 sm:text-sm">Default due-date calculation</p>
                             </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">
-                                    Borrowing Period
-                                </h2>
-
-                                <p className="text-sm text-slate-500">
-                                    Default number of days before a borrowed book becomes due.
-                                </p>
-                            </div>
-
                         </div>
-
-                        <div className="p-6">
-
+                        <div className="p-4 sm:p-6">
                             <div className="max-w-xl">
-
-                                <SettingField
-                                    icon={
-                                        <FaClock />
-                                    }
-                                    label="Borrowing Period"
-                                    name="borrowingPeriodDays"
-                                    value={
-                                        settings.borrowingPeriodDays
-                                    }
-                                    onChange={
-                                        handleChange
-                                    }
-                                    min="1"
-                                    max="30"
-                                    suffix="days"
-                                    description="Applied when staff approves a borrow request and the system calculates the due date."
-                                />
-
+                                <SettingField icon={<FaClock />} label="Borrowing Period" name="borrowingPeriodDays" value={settings.borrowingPeriodDays} onChange={handleChange} min="1" max="30" suffix="days" description="Used to calculate the due date when staff approves a borrow request." />
                             </div>
-
                         </div>
-
                     </section>
 
-                    {/* INFO */}
-                    <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-
-                        <div className="flex gap-4">
-
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                <FaCog />
-                            </div>
-
+                    <section className="rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:p-5">
+                        <div className="flex gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700"><FaCog /></div>
                             <div>
-                                <h3 className="font-semibold text-blue-900">
-                                    Automatic Library Rules
-                                </h3>
-
-                                <p className="mt-1 text-sm leading-6 text-blue-700">
-                                    These values are used directly by the borrowing process.
-                                    Borrow limits are checked when borrowers submit requests,
-                                    while the borrowing period is used to calculate due dates
-                                    when staff approves a request.
-                                </p>
+                                <h3 className="font-semibold text-blue-900">Automatic Library Rules</h3>
+                                <p className="mt-1 text-xs leading-5 text-blue-800 sm:text-sm sm:leading-6">Borrow limits are checked when requests are submitted. The borrowing period determines due dates when staff approves requests.</p>
                             </div>
-
                         </div>
-
                     </section>
 
-                    {/* SAVE */}
-                    <div className="flex justify-end">
-
-                        <button
-                            type="button"
-                            disabled={
-                                saving
-                            }
-                            onClick={
-                                handleSave
-                            }
-                            className="flex items-center gap-2 rounded-xl bg-[#0F4C97] px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <FaSave />
-
-                            {saving
-                                ? "Saving..."
-                                : "Save System Settings"}
+                    <div className="hidden justify-end lg:flex">
+                        <button type="button" disabled={saving} onClick={handleSave} className="flex items-center gap-2 rounded-xl bg-[#0F4C97] px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">
+                            <FaSave />{saving ? "Saving..." : "Save System Settings"}
                         </button>
-
                     </div>
 
+                    {/* Positioned below AI Assistant and above the bottom navigation */}
+                    <button type="button" disabled={saving} onClick={handleSave} aria-label={saving ? "Saving settings" : "Save system settings"} title="Save System Settings" className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 lg:hidden">
+                        <FaSave />
+                    </button>
                 </div>
             )}
         </AdminLayout>

@@ -8,6 +8,7 @@ import {
   FaBuilding,
   FaPlus,
   FaSearch,
+  FaFilter,
   FaEdit,
   FaTimes,
 } from "react-icons/fa";
@@ -24,6 +25,9 @@ function Publishers() {
 
   const [search, setSearch] =
     useState("");
+
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [loading, setLoading] =
     useState(true);
@@ -83,10 +87,6 @@ function Publishers() {
           .trim()
           .toLowerCase();
 
-      if (!keyword) {
-        return publishers;
-      }
-
       return publishers.filter(
         (publisher) => {
           const name =
@@ -106,16 +106,16 @@ function Publishers() {
                 ""
             ).toLowerCase();
 
-          return (
-            name.includes(keyword) ||
-            address.includes(keyword) ||
-            email.includes(keyword)
-          );
+          const matchesSearch = !keyword || name.includes(keyword) || address.includes(keyword) || email.includes(keyword);
+          const isActive = publisher.is_active !== false;
+          const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? isActive : !isActive);
+          return matchesSearch && matchesStatus;
         }
       );
     }, [
       publishers,
       search,
+      statusFilter,
     ]);
 
   const resetForm = () => {
@@ -332,7 +332,7 @@ function Publishers() {
           onClick={
             openAddModal
           }
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
+          className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
         >
           <FaPlus />
           Add Publisher
@@ -346,8 +346,37 @@ function Publishers() {
         </div>
       )}
 
+      {/* Mobile search and status filter */}
+      <section className="mb-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:hidden">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Publisher Records</h2>
+            <p className="text-xs text-slate-500">{loading ? "Loading..." : `${filteredPublishers.length} publisher${filteredPublishers.length === 1 ? "" : "s"} found`}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+            <FaSearch className="shrink-0 text-slate-400" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search publishers..." className="h-11 min-w-0 w-full bg-transparent text-sm outline-none" />
+          </label>
+          <button type="button" aria-label="Filter publishers" aria-expanded={mobileFilterOpen} onClick={() => setMobileFilterOpen((open) => !open)} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${mobileFilterOpen || statusFilter !== "all" ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-blue-800"}`}>
+            <FaFilter />
+          </button>
+        </div>
+        {mobileFilterOpen && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <label htmlFor="publisher-mobile-status" className="mb-1 block text-xs font-semibold text-slate-600">Status</label>
+            <select id="publisher-mobile-status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-600">
+              <option value="all">All publishers</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        )}
+      </section>
+
       {/* TOOLBAR */}
-      <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="mb-6 hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -403,8 +432,35 @@ function Publishers() {
 
       </section>
 
+      {/* Mobile publisher cards */}
+      <section className="space-y-3 lg:hidden">
+        {!loading && filteredPublishers.map((publisher) => (
+          <article key={publisher.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-800"><FaBuilding /></div>
+              <div className="min-w-0 flex-1">
+                <h3 className="break-words text-sm font-bold text-slate-900">{publisher.name}</h3>
+                <p className="mt-1 text-xs text-slate-500">Catalog publisher</p>
+              </div>
+              <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${publisher.is_active === false ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}`}>
+                {publisher.is_active === false ? "Inactive" : "Active"}
+              </span>
+            </div>
+            <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+              <div><p className="text-slate-400">Address</p><p className="mt-0.5 break-words font-medium text-slate-700">{publisher.address || "Not specified"}</p></div>
+              <div><p className="text-slate-400">Email</p><p className="mt-0.5 break-all font-medium text-slate-700">{publisher.contact_email || publisher.contactEmail || "No email"}</p></div>
+              <div><p className="text-slate-400">Contact number</p><p className="mt-0.5 font-medium text-slate-700">{publisher.contact_number || publisher.contactNumber || "No contact number"}</p></div>
+            </div>
+            <button type="button" onClick={() => openEditModal(publisher)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-sm font-semibold text-blue-800"><FaEdit /> Edit Publisher</button>
+          </article>
+        ))}
+        {loading && <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">Loading publishers...</div>}
+        {!loading && filteredPublishers.length === 0 && <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">No publishers found. Try changing the search or filter.</div>}
+      </section>
+      <button type="button" onClick={openAddModal} aria-label="Add publisher" className="fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg lg:hidden"><FaPlus /></button>
+
       {/* TABLE */}
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <section className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="overflow-x-auto">
 

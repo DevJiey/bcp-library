@@ -337,13 +337,13 @@ function BorrowRequests() {
       )}
 
       {/* TOOLBAR */}
-      <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="mb-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 sm:mb-6 sm:p-5">
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
           <div className="flex items-center gap-4">
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 sm:h-12 sm:w-12">
               <FaClipboardCheck />
             </div>
 
@@ -377,7 +377,7 @@ function BorrowRequests() {
                   event.target.value
                 )
               }
-              className="w-full px-3 py-2 outline-none sm:w-72"
+              className="min-w-0 w-full bg-transparent px-3 py-2 text-sm outline-none sm:w-72"
             />
 
           </div>
@@ -386,8 +386,45 @@ function BorrowRequests() {
 
       </div>
 
+      {/* MOBILE REQUEST CARDS — desktop table remains unchanged */}
+      <div className="space-y-3 lg:hidden">
+        {loading && (
+          <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500 ring-1 ring-slate-200">Loading borrow requests...</div>
+        )}
+        {!loading && filteredRequests.length === 0 && (
+          <div className="rounded-2xl bg-white p-8 text-center ring-1 ring-slate-200">
+            <FaClipboardCheck className="mx-auto mb-3 text-3xl text-slate-300" />
+            <p className="font-semibold text-slate-800">No pending borrow requests</p>
+            <p className="mt-1 text-sm text-slate-500">New requests will appear here.</p>
+          </div>
+        )}
+        {!loading && filteredRequests.map((request) => (
+          <article key={request.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[#0F4C97]"><FaUser /></div>
+                <div className="min-w-0">
+                  <h3 className="break-words font-bold text-slate-900">{getBorrowerName(request)}</h3>
+                  <p className="text-xs text-slate-500">{request.school_id || "Registered borrower"}</p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">Pending</span>
+            </div>
+            <div className="mt-3 rounded-xl bg-slate-50 p-3">
+              <div className="flex items-start gap-2 text-sm font-semibold text-slate-800"><FaBook className="mt-1 shrink-0 text-[#0F4C97]" /><span className="break-words">{getBookTitle(request)}</span></div>
+              {request.isbn && <p className="mt-1 pl-5 text-xs text-slate-500">ISBN: {request.isbn}</p>}
+              <p className="mt-2 text-xs text-slate-500">Requested: {formatDate(request.created_at || request.requested_at)}</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => openApproveModal(request)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white active:scale-[.98]"><FaCheck /> Approve</button>
+              <button type="button" onClick={() => openRejectModal(request)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 active:scale-[.98]"><FaTimes /> Reject</button>
+            </div>
+          </article>
+        ))}
+      </div>
+
       {/* TABLE */}
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="overflow-x-auto">
 
@@ -581,7 +618,7 @@ function BorrowRequests() {
       {selectedRequest &&
         modalType ===
         "approve" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 py-8 backdrop-blur-sm sm:p-4">
 
             <form
               onSubmit={
@@ -717,7 +754,7 @@ function BorrowRequests() {
       {selectedRequest &&
         modalType ===
         "reject" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 py-8 backdrop-blur-sm sm:p-4">
 
             <form
               onSubmit={

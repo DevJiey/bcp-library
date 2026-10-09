@@ -10,6 +10,7 @@ import {
     FaSearch,
     FaEdit,
     FaTimes,
+    FaFilter,
 } from "react-icons/fa";
 
 import AdminLayout from "../../layouts/AdminLayout";
@@ -27,6 +28,8 @@ function Announcements() {
 
     const [statusFilter, setStatusFilter] =
         useState("All");
+
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     const [loading, setLoading] =
         useState(true);
@@ -393,7 +396,7 @@ function Announcements() {
                     onClick={
                         openAddModal
                     }
-                    className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
+                    className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
                 >
                     <FaPlus />
                     New Announcement
@@ -408,13 +411,13 @@ function Announcements() {
             )}
 
             {/* TOOLBAR */}
-            <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <section className="mb-4 lg:mb-6 rounded-2xl bg-white p-3 sm:p-5 shadow-sm ring-1 ring-slate-200">
 
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
                     <div className="flex items-center gap-4">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                        <div className="hidden lg:flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                             <FaBullhorn />
                         </div>
 
@@ -437,7 +440,7 @@ function Announcements() {
 
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="hidden lg:flex flex-col gap-3 sm:flex-row">
 
                         <div className="flex items-center rounded-xl border border-slate-300 px-3 transition focus-within:border-blue-700 focus-within:ring-4 focus-within:ring-blue-100">
 
@@ -497,10 +500,88 @@ function Announcements() {
 
                 </div>
 
+                {/* Mobile search + filter, aligned in one row */}
+                <div className="mt-3 lg:hidden">
+                    <div className="flex items-center gap-2">
+                        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+                            <FaSearch className="shrink-0 text-slate-400" />
+                            <input
+                                type="search"
+                                aria-label="Search announcements"
+                                placeholder="Search announcements..."
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                className="h-11 w-full min-w-0 bg-transparent text-sm outline-none"
+                            />
+                        </label>
+                        <button
+                            type="button"
+                            aria-label="Filter announcements by status"
+                            aria-expanded={mobileFiltersOpen}
+                            onClick={() => setMobileFiltersOpen((open) => !open)}
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${mobileFiltersOpen || statusFilter !== "All" ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-300 bg-white text-blue-700"}`}
+                        >
+                            <FaFilter />
+                        </button>
+                    </div>
+                    {mobileFiltersOpen && (
+                        <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                            <label htmlFor="announcement-mobile-status" className="mb-1 block text-xs font-semibold text-slate-600">Status</label>
+                            <select
+                                id="announcement-mobile-status"
+                                value={statusFilter}
+                                onChange={(event) => setStatusFilter(event.target.value)}
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none"
+                            >
+                                <option value="All">All Status</option>
+                                <option value="Published">Published</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Archived">Archived</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
             </section>
 
-            {/* TABLE */}
-            <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+            {/* Mobile announcement cards */}
+            <section className="space-y-3 lg:hidden">
+                {!loading && filteredAnnouncements.map((announcement) => (
+                    <article key={announcement.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                        <div className="flex items-start gap-3">
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-800">
+                                <FaBullhorn />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <h3 className="break-words text-sm font-bold text-slate-900">{announcement.title}</h3>
+                                <p className="mt-1 text-xs text-slate-500">{formatDate(announcement.created_at || announcement.createdAt)}</p>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold capitalize ${getStatusStyle(announcement.status)}`}>
+                                {announcement.status}
+                            </span>
+                        </div>
+                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">{announcement.message}</p>
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold capitalize text-blue-700">
+                                {announcement.audience === "all" ? "Everyone" : announcement.audience}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => openEditModal(announcement)}
+                                className="flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700"
+                            >
+                                <FaEdit /> Edit
+                            </button>
+                        </div>
+                    </article>
+                ))}
+                {loading && <div className="rounded-2xl bg-white px-5 py-12 text-center text-sm text-slate-500">Loading announcements...</div>}
+                {!loading && filteredAnnouncements.length === 0 && (
+                    <div className="rounded-2xl bg-white px-5 py-12 text-center text-sm text-slate-500">No announcements found.</div>
+                )}
+            </section>
+
+            {/* Desktop table */}
+            <section className="hidden lg:block overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
                 <div className="overflow-x-auto">
 
@@ -657,6 +738,16 @@ function Announcements() {
                     )}
 
             </section>
+
+            {/* Mobile add button (above bottom navigation) */}
+            <button
+                type="button"
+                onClick={openAddModal}
+                aria-label="New announcement"
+                className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-xl text-white shadow-lg lg:hidden"
+            >
+                <FaPlus />
+            </button>
 
             {/* ADD */}
             {showAddModal && (

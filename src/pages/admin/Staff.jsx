@@ -6,6 +6,8 @@ import {
 
 import {
   FaSearch,
+  FaFilter,
+  FaChevronRight,
   FaUserPlus,
   FaUsersCog,
   FaUserTie,
@@ -46,6 +48,9 @@ function Staff() {
 
   const [showAddModal, setShowAddModal] =
     useState(false);
+
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [selectedMobileStaff, setSelectedMobileStaff] = useState(null);
 
   const [newStaff, setNewStaff] =
     useState({
@@ -394,7 +399,7 @@ function Staff() {
               true
             )
           }
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
+          className="hidden lg:flex items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-4 py-2.5 font-semibold text-white transition hover:bg-blue-800"
         >
           <FaUserPlus />
           Add Staff
@@ -409,7 +414,7 @@ function Staff() {
       )}
 
       {/* TOOLBAR */}
-      <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="mb-6 hidden lg:block rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -500,8 +505,66 @@ function Staff() {
 
       </section>
 
+      {/* MOBILE SEARCH & FILTER */}
+      <section className="mb-4 lg:hidden">
+        <div className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-600">
+            <FaSearch className="shrink-0 text-slate-400" />
+            <input aria-label="Search staff" type="search" placeholder="Search members..." value={search} onChange={(event) => setSearch(event.target.value)} className="w-full min-w-0 bg-transparent text-sm outline-none" />
+          </label>
+          <button type="button" aria-label="Filter staff by status" aria-expanded={mobileFiltersOpen} onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"><FaFilter /></button>
+        </div>
+        {mobileFiltersOpen && (
+          <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <label htmlFor="mobile-staff-status" className="mb-2 block text-xs font-semibold text-slate-600">Account status</label>
+            <select id="mobile-staff-status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">
+              <option value="All">All Status</option><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Suspended">Suspended</option>
+            </select>
+            <button type="button" onClick={() => setMobileFiltersOpen(false)} className="mt-3 w-full rounded-xl bg-[#0F4C97] px-4 py-2 text-sm font-semibold text-white">Apply Filter</button>
+          </div>
+        )}
+        <p className="mt-2 px-1 text-xs text-slate-500">{loading ? "Loading..." : `${filteredStaff.length} staff account${filteredStaff.length === 1 ? "" : "s"} found`}</p>
+      </section>
+
+      {/* MOBILE STAFF CARDS */}
+      <section className="space-y-2 lg:hidden">
+        {!loading && filteredStaff.map((staff) => (
+          <button key={staff.id} type="button" onClick={() => setSelectedMobileStaff(staff)} className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-4 text-left shadow-sm">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">{getInitials(staff) || "LS"}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-slate-900">{getFullName(staff) || "Library Staff"}</span>
+              <span className="block truncate text-xs text-slate-500">{staff.school_id || staff.email || "Library Staff"}</span>
+            </span>
+            <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold capitalize ${getStatusStyle(staff.account_status)}`}>{staff.account_status || "Unknown"}</span>
+            <FaChevronRight className="shrink-0 text-xs text-slate-400" />
+          </button>
+        ))}
+        {loading && <p className="py-8 text-center text-sm text-slate-500">Loading staff accounts...</p>}
+        {!loading && filteredStaff.length === 0 && <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500">No staff accounts found.</p>}
+      </section>
+
+      {/* MOBILE STAFF DETAILS AND EXISTING STATUS ACTIONS */}
+      {selectedMobileStaff && (
+        <div className="fixed inset-0 z-[55] flex items-end justify-center bg-slate-950/50 p-3 lg:hidden" onClick={() => setSelectedMobileStaff(null)}>
+          <section role="dialog" aria-modal="true" aria-label="Staff details" onClick={(event) => event.stopPropagation()} className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-xl" style={{paddingBottom: "calc(20px + env(safe-area-inset-bottom))"}}>
+            <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold text-slate-900">Staff Details</h2><button type="button" aria-label="Close staff details" onClick={() => setSelectedMobileStaff(null)}><FaTimes /></button></div>
+            <p className="font-semibold text-slate-900">{getFullName(selectedMobileStaff) || "Library Staff"}</p>
+            <p className="mt-1 break-all text-sm text-slate-500">{selectedMobileStaff.school_id || "No School ID"}</p>
+            <p className="mt-1 break-all text-sm text-slate-500">{selectedMobileStaff.email || "No email"}</p>
+            <p className="mt-2 text-sm capitalize text-slate-600">Status: {selectedMobileStaff.account_status || "Unknown"}</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button type="button" disabled={String(updatingId) === String(selectedMobileStaff.id)} onClick={async () => {await updateStatus(selectedMobileStaff, selectedMobileStaff.account_status === "active" ? "inactive" : "active"); setSelectedMobileStaff(null);}} className="rounded-xl bg-[#0F4C97] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{selectedMobileStaff.account_status === "active" ? "Deactivate" : "Activate"}</button>
+              {selectedMobileStaff.account_status !== "suspended" && <button type="button" disabled={String(updatingId) === String(selectedMobileStaff.id)} onClick={async () => {await updateStatus(selectedMobileStaff, "suspended"); setSelectedMobileStaff(null);}} className="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 disabled:opacity-50">Suspend</button>}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* MOBILE ADD STAFF */}
+      <button type="button" aria-label="Add staff" onClick={() => setShowAddModal(true)} className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#0F4C97] text-2xl text-white shadow-xl lg:hidden" style={{bottom: "calc(6.5rem + env(safe-area-inset-bottom))"}}><FaUserPlus /></button>
+
       {/* TABLE */}
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <section className="hidden overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:block">
 
         <div className="overflow-x-auto">
 

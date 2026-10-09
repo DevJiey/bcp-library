@@ -138,17 +138,17 @@ function Returns() {
   return (
     <StaffLayout>
       {/* PAGE HEADER */}
-      <div className="mb-5 sm:mb-8">
+      <div className="mb-4 sm:mb-8">
 
         <p className="text-sm font-semibold text-blue-700">
           Circulation Management
         </p>
 
-        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">
+        <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-3xl">
           Process Book Return
         </h1>
 
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-1 text-xs leading-5 text-slate-500 sm:mt-2 sm:text-sm">
           Scan the physical book barcode and record its condition upon return.
         </p>
 
@@ -166,21 +166,21 @@ function Returns() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-4 pb-24 sm:gap-6 sm:pb-0 xl:grid-cols-[1.1fr_0.9fr]">
 
         {/* RETURN FORM */}
         <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
 
-          <div className="bg-gradient-to-r from-[#0F4C97] to-blue-700 px-6 py-5 text-white">
+          <div className="bg-gradient-to-r from-[#0F4C97] to-blue-700 px-4 py-4 text-white sm:px-6 sm:py-5">
 
             <div className="flex items-center gap-4">
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-xl">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-lg sm:h-12 sm:w-12 sm:text-xl">
                 <FaUndo />
               </div>
 
               <div>
-                <h2 className="text-xl font-bold">
+                <h2 className="text-lg font-bold sm:text-xl">
                   Return Processing
                 </h2>
 
@@ -197,7 +197,7 @@ function Returns() {
             onSubmit={
               handleReturn
             }
-            className="p-6"
+            className="p-4 sm:p-6"
           >
 
             {/* BARCODE */}
@@ -205,7 +205,7 @@ function Returns() {
               Book Barcode
             </label>
 
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-2 flex flex-row gap-2 sm:gap-3">
 
               <div className="flex min-w-0 flex-1 items-center rounded-xl border border-slate-300 px-4 transition focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-100">
 
@@ -224,7 +224,7 @@ function Returns() {
                   placeholder="Scan or enter barcode"
                   autoFocus
                   disabled={processing}
-                  className="min-w-0 w-full px-3 py-3 outline-none"
+                  className="min-w-0 w-full bg-transparent px-2 py-3 text-sm outline-none sm:px-3"
                 />
 
               </div>
@@ -235,9 +235,11 @@ function Returns() {
                   setShowScanner(true)
                 }
                 disabled={processing}
-                className="shrink-0 rounded-xl bg-[#0F4C97] px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-3 py-3 text-xs font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-sm"
               >
-                Scan Camera
+                <FaBarcode className="sm:hidden" />
+                <span className="sm:hidden">Scan</span>
+                <span className="hidden sm:inline">Scan Camera</span>
               </button>
 
             </div>
@@ -261,7 +263,7 @@ function Returns() {
             </p>
 
             {/* CONDITION */}
-            <label className="mt-6 block text-sm font-semibold text-slate-700">
+            <label className="mt-5 block text-sm font-semibold text-slate-700 sm:mt-6">
               Condition on Return
             </label>
 
@@ -304,7 +306,7 @@ function Returns() {
             </select>
 
             {/* REMARKS */}
-            <label className="mt-6 block text-sm font-semibold text-slate-700">
+            <label className="mt-5 block text-sm font-semibold text-slate-700 sm:mt-6">
               Remarks
             </label>
 
@@ -333,7 +335,7 @@ function Returns() {
               disabled={
                 processing
               }
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F4C97] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6 sm:bg-emerald-600 sm:hover:bg-emerald-700"
             >
               <FaCheckCircle />
 
@@ -347,12 +349,12 @@ function Returns() {
         </section>
 
         {/* RESULT / GUIDE */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
 
           {lastReturn ? (
             <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-emerald-200">
 
-              <div className="border-b border-emerald-100 bg-emerald-50 px-6 py-5">
+              <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-4 sm:px-6 sm:py-5">
 
                 <div className="flex items-center gap-3">
 
@@ -374,9 +376,9 @@ function Returns() {
 
               </div>
 
-              <div className="space-y-4 p-6">
+              <div className="space-y-4 p-4 sm:p-6">
 
-                <div className="flex justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
 
                   <span className="text-sm text-slate-500">
                     Transaction ID
@@ -391,7 +393,7 @@ function Returns() {
 
                 </div>
 
-                <div className="flex justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
 
                   <span className="text-sm text-slate-500">
                     Returned At
@@ -407,7 +409,7 @@ function Returns() {
 
                 </div>
 
-                <div className="flex justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
 
                   <span className="text-sm text-slate-500">
                     Condition
@@ -443,7 +445,7 @@ function Returns() {
 
             </section>
           ) : (
-            <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
 
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                 <FaBook />
