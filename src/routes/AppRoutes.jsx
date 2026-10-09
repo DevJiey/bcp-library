@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
 import ChangePassword from "../pages/auth/ChangePassword";
+import SetupAccount from "../pages/auth/SetupAccount";
 
 import BorrowerDashboard from "../pages/borrower/Dashboard";
 import Books from "../pages/borrower/Books";
@@ -21,6 +22,7 @@ import Categories from "../pages/admin/Categories";
 import Authors from "../pages/admin/Authors";
 import Publishers from "../pages/admin/Publishers";
 import Staff from "../pages/admin/Staff";
+import AdminBorrowers from "../pages/admin/Borrowers";
 import Announcements from "../pages/admin/Announcements";
 import Settings from "../pages/admin/Settings";
 import Reports from "../pages/admin/Reports";
@@ -42,6 +44,11 @@ function AppRoutes() {
             <Route
                 path="/change-password"
                 element={<ChangePassword />}
+            />
+
+            <Route
+                path="/setup-account"
+                element={<SetupAccount />}
             />
 
             <Route
@@ -184,6 +191,15 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute allowedRole="admin">
                         <Staff />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/admin/borrowers"
+                element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                        <AdminBorrowers />
                     </ProtectedRoute>
                 }
             />

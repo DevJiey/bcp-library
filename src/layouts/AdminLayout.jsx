@@ -1,3 +1,4 @@
+
 import PortalLayout from "./PortalLayout";
 
 import {
@@ -7,6 +8,7 @@ import {
     FaTags,
     FaUserEdit,
     FaBuilding,
+    FaUsers,
     FaUsersCog,
     FaCog,
     FaChartBar,
@@ -52,6 +54,11 @@ function AdminLayout({ children }) {
                     icon: <FaBuilding />,
                 },
             ],
+        },
+        {
+            label: "Borrower Management",
+            path: "/admin/borrowers",
+            icon: <FaUsers />,
         },
         {
             label: "Staff Management",
